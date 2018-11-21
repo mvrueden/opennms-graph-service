@@ -30,13 +30,21 @@ package org.opennms.poc.graph.api;
 
 import java.util.List;
 
-public interface Graph {
-    List<Vertex> getVertices();
+import org.opennms.poc.graph.api.generic.GenericGraph;
 
-    List<Edge> getEdges();
+public interface Graph<V extends Vertex, E extends Edge> {
+    List<V> getVertices();
+
+    List<E> getEdges();
 
     String getNamespace();
 
+    GenericGraph asGenericGraph();
+
+    void addEdges(List<E> edges);
+
+    void addVertices(List<V> vertices);
+
     // TODO MVR make this more generic...
-    Vertex getVertex(String id);
+    V getVertex(String id);
 }

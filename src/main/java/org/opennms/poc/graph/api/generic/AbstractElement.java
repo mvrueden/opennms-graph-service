@@ -26,56 +26,59 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.rest;
+package org.opennms.poc.graph.api.generic;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
+public class AbstractElement {
 
-import org.opennms.poc.graph.api.Edge;
+    protected final Map<String, Object> properties = new HashMap<>();
 
-@XmlRootElement(name = "link")
-@XmlAccessorType(XmlAccessType.FIELD)
-public class LinkDTO {
-
-    private VertexDTO source;
-    private VertexDTO target;
-    private Map<String, Object> properties = new HashMap<>();
-
-    public LinkDTO() {
+    public AbstractElement() {
 
     }
 
-    public LinkDTO(Edge edge) {
-        this.source = new VertexDTO(edge.getSource());
-        this.target = new VertexDTO(edge.getTarget());
-        this.properties.putAll(edge.getProperties());
+    public AbstractElement(String namespace, String id) {
+        setNamespace(namespace);
+        setId(id);
     }
 
-    public VertexDTO getSource() {
-        return source;
+    public void setProperty(String key, Object value) {
+        properties.put(key, value);
     }
 
-    public void setSource(VertexDTO source) {
-        this.source = source;
+    public <T> T getProperty(String key) {
+        return (T) properties.get(key);
     }
 
-    public VertexDTO getTarget() {
-        return target;
+    public <T> T getProperty(String key, T defaultValue) {
+        return (T) properties.getOrDefault(key, defaultValue);
     }
 
-    public void setTarget(VertexDTO target) {
-        this.target = target;
+    public void setProperties(Map<String, Object> properties) {
+        this.properties.clear();
+        this.properties.putAll(properties);
     }
 
     public Map<String, Object> getProperties() {
         return properties;
     }
 
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties;
+    public String getNamespace() {
+        return getProperty("namespace");
     }
+
+    public void setNamespace(String namespace) {
+        setProperty("namespace", namespace);
+    }
+
+    public String getId() {
+        return getProperty("id");
+    }
+
+    public void setId(String id) {
+        setProperty("id", id);
+    }
+
 }

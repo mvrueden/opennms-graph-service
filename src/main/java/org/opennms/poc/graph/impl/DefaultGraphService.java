@@ -36,10 +36,12 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
+import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.listener.GraphListener;
 import org.opennms.poc.graph.api.listener.LinkEvent;
 import org.springframework.stereotype.Service;
@@ -62,9 +64,8 @@ public class DefaultGraphService implements GraphService {
     // OSGi-Hook
     public void onBind(GraphProvider provider, Map properties) {
         Objects.requireNonNull(provider);
-        Objects.requireNonNull(provider.getGraphProviderDescriptor());
 
-        final String namespace = provider.getGraphProviderDescriptor().getNamespace();
+        final String namespace = provider.getNamespace();
         if (providers.containsKey(namespace)) {
             throw new IllegalStateException("Provider for namespace [" + namespace + "] already registered");
         }
@@ -78,7 +79,7 @@ public class DefaultGraphService implements GraphService {
 
     // OSGi-Hook
     public void onUnbind(GraphProvider provider, Map properties) {
-        final String namespace = provider.getGraphProviderDescriptor().getNamespace();
+        final String namespace = provider.getNamespace();
         providers.remove(namespace);
         if (provider instanceof GraphListener) {
             unregisterListener((GraphListener) provider);
@@ -91,15 +92,15 @@ public class DefaultGraphService implements GraphService {
     }
 
     @Override
-    public List<Graph> getGraphs() {
+    public List<Graph<? super Vertex, ? super Edge>> getGraphs() {
         return providers.values()
                 .stream()
-                .map(p -> p.getGraph())
+                .map(p -> (Graph<Vertex, Edge>) p.getGraph())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Graph getGraph(String namespace) {
+    public <V extends Vertex, E extends Edge> Graph<V, E> getGraph(String namespace) {
         final GraphProvider graphProvider = providers.get(namespace);
         if (graphProvider == null) {
             throw new NoSuchElementException("There is no graph provider registered for namespace [" + namespace + "]");
@@ -108,7 +109,7 @@ public class DefaultGraphService implements GraphService {
     }
 
     @Override
-    public Graph getGraph(Query query) {
+    public <V extends Vertex, E extends Edge> Graph<V, E> getGraph(Query query) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

@@ -26,56 +26,39 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.rest;
+package org.opennms.poc.graph.api.generic;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-
+import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Vertex;
 
-@XmlRootElement(name = "vertex")
-@XmlAccessorType(XmlAccessType.FIELD)
-public class VertexDTO {
+public class GenericEdge extends AbstractElement implements Edge<GenericVertex> {
+    private final GenericVertex source;
+    private final GenericVertex target;
 
-    private String namespace;
-    private String id;
-    private Map<String, Object> properties = new HashMap<>();
-
-    public VertexDTO() {
-
+    public GenericEdge(Vertex source, Vertex target) {
+        this(Objects.requireNonNull(source).asGenericVertex(),
+             Objects.requireNonNull(target).asGenericVertex());
     }
 
-    public VertexDTO(Vertex vertex) {
-        this.properties.putAll(vertex.getProperties());
-        this.namespace = vertex.getNamespace();
-        this.id = vertex.getId();
+    public GenericEdge(GenericVertex source, GenericVertex target) {
+        this.source = source;
+        this.target = target;
     }
 
-    public String getNamespace() {
-        return namespace;
+    @Override
+    public GenericVertex getSource() {
+        return source;
     }
 
-    public String getId() {
-        return id;
+    @Override
+    public GenericVertex getTarget() {
+        return target;
     }
 
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public Map<String, Object> getProperties() {
-        return properties;
-    }
-
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties;
+    @Override
+    public GenericEdge asGenericEdge() {
+        return this;
     }
 }

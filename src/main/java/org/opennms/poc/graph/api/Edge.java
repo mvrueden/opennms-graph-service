@@ -28,12 +28,14 @@
 
 package org.opennms.poc.graph.api;
 
-import java.util.Map;
+import org.opennms.poc.graph.api.generic.GenericEdge;
 
 // TODO MVR noderef?!
-public interface Edge {
-    Vertex getSource();
-    Vertex getTarget();
-    // TODO MVR ???
-    Map<String, Object> getProperties();
+public interface Edge<V extends Vertex> {
+    String getNamespace();
+    String getId();
+    V getSource();
+    V getTarget();
+
+    GenericEdge asGenericEdge();
 }

@@ -28,8 +28,6 @@
 
 package org.opennms.poc.graph.impl.refs;
 
-import org.opennms.poc.graph.api.NodeRef;
-
 public class NodeRefs {
 
     public static NodeRef from(int nodeId) {

@@ -34,12 +34,7 @@
         // d3.json("https://gist.githubusercontent.com/mbostock/4062045/raw/5916d145c8c048a6e3086915a6be464467391c62/miserables.json")
         d3.json("http://localhost:8080/rest/graphs/" + namespace)
             .then(function(data) {
-                var links = data.links.map(function(link) {
-                    return {
-                        "source": link.source.id,
-                        "target": link.target.id
-                    };
-                });
+                const links = data.edges.map(d => Object.create(d));
                 const nodes = data.vertices.map(d => Object.create(d));
                 const height = 512;
                 const width = 1024;

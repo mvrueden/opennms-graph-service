@@ -28,14 +28,10 @@
 
 package org.opennms.poc.graph.api;
 
-public interface GraphProvider {
-
-    // TODO MVR do we really need this?
-    GraphProviderDescriptor getGraphProviderDescriptor();
+public interface GraphProvider<V extends Vertex, E extends Edge> {
 
     String getNamespace();
 
     // TODO MVR multiple graphs
-    Graph getGraph();
-
+    Graph<V, E> getGraph();
 }

@@ -28,11 +28,11 @@
 
 package org.opennms.poc.graph.api;
 
-import java.util.Map;
+import org.opennms.poc.graph.api.generic.GenericVertex;
 
 public interface Vertex {
     String getNamespace();
     String getId();
-    // TODO MVR ???
-    Map<? extends String,?> getProperties();
+
+    GenericVertex asGenericVertex();
 }

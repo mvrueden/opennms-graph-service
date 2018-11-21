@@ -26,52 +26,29 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl;
+package org.opennms.poc.graph.api.generic;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.Map;
 
-import org.opennms.poc.graph.api.Edge;
-import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
 
-public class DefaultGraph implements Graph {
-    private final String namespace;
-    private final List<Vertex> vertices = new ArrayList<>();
-    private final List<Edge> edges = new ArrayList<>();
+public class GenericVertex extends AbstractElement implements Vertex {
 
-    public DefaultGraph(String namespace) {
-        this.namespace = Objects.requireNonNull(namespace);
+    public GenericVertex() {
+
+    }
+
+    public GenericVertex(Map<String, Object> properties) {
+        setProperties(properties);
+    }
+
+    // TODO MVR id handling?
+    public GenericVertex(String namespace, int id) {
+        super(namespace, Integer.toString(id));
     }
 
     @Override
-    public List<Vertex> getVertices() {
-        return vertices;
-    }
-
-    @Override
-    public List<Edge> getEdges() {
-        return edges;
-    }
-
-    @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    @Override
-    public Vertex getVertex(String id) {
-        return vertices.stream().filter(v -> v.getId().equals(id)).findAny().orElseThrow(NoSuchElementException::new);
-    }
-
-    public void addVertices(Collection<Vertex> vertices) {
-        this.vertices.addAll(vertices);
-    }
-
-    public void addEdges(Collection<Edge> edges) {
-        this.edges.addAll(edges);
+    public GenericVertex asGenericVertex() {
+        return this;
     }
 }

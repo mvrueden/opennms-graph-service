@@ -28,21 +28,21 @@
 
 package org.opennms.poc.graph.impl;
 
-import static org.opennms.poc.graph.impl.GraphmlProvider.GraphMLProperties.NAMESPACE;
-
 import java.io.InputStream;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.opennms.features.graphml.model.GraphML;
 import org.opennms.features.graphml.model.GraphMLGraph;
 import org.opennms.features.graphml.model.GraphMLReader;
 import org.opennms.features.graphml.model.InvalidGraphException;
-import org.opennms.poc.graph.DefaultEdge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.GraphProviderDescriptor;
+import org.opennms.poc.graph.api.generic.GenericEdge;
+import org.opennms.poc.graph.api.generic.GenericGraph;
+import org.opennms.poc.graph.api.generic.GenericVertex;
 
-public class GraphmlProvider implements GraphProvider {
+public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge> {
 
     // TODO MVR copied over from OpenNMS
     public interface GraphMLProperties {
@@ -74,22 +74,24 @@ public class GraphmlProvider implements GraphProvider {
     private final Graph graph;
 
     public GraphmlProvider(InputStream inputStream) throws InvalidGraphException {
-        final GraphML metaGraph = GraphMLReader.read(inputStream);
-        // TODO MVR NPE...
-        final GraphMLGraph theGraph = metaGraph.getGraphs().get(1);
-        final DefaultGraph graph = new DefaultGraph(theGraph.getProperty(NAMESPACE));
-        graph.addVertices(theGraph.getNodes().stream().map(n -> new DefaultVertex(n.getProperties())).collect(Collectors.toList()));
-        graph.addEdges(theGraph.getEdges().stream().map(e -> {
-            final DefaultEdge edge = new DefaultEdge(graph.getVertex(e.getSource().getId()), graph.getVertex(e.getTarget().getId()));
-            edge.setProperties(e.getProperties());
-            return edge;
-        }).collect(Collectors.toList()));
-        this.graph = graph;
-    }
+        final GraphML graphML = GraphMLReader.read(inputStream);
+        // TODO MVR handle multiple graphs properly
 
-    @Override
-    public GraphProviderDescriptor getGraphProviderDescriptor() {
-        return new GraphProviderDescriptor(graph.getNamespace());
+        // TODO MVR NPE...
+        final GraphMLGraph graphMLGraph = graphML.getGraphs().get(1);
+        final Graph<GenericVertex, GenericEdge> graph = new GenericGraph(graphMLGraph.getProperties());
+        final List<GenericVertex> vertices = graphMLGraph.getNodes().stream().map(n -> new GenericVertex(n.getProperties())).collect(Collectors.toList());
+        graph.addVertices(vertices);
+
+        final List<GenericEdge> edges = graphMLGraph.getEdges().stream().map(e -> {
+                    final GenericVertex source = graph.getVertex(e.getSource().getId());
+                    final GenericVertex target = graph.getVertex(e.getTarget().getId());
+                    final GenericEdge edge = new GenericEdge(source, target);
+                    edge.setProperties(e.getProperties());
+                    return edge;
+                }).collect(Collectors.toList());
+        graph.addEdges(edges);
+        this.graph = graph;
     }
 
     @Override

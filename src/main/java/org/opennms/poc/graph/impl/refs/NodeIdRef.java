@@ -30,8 +30,6 @@ package org.opennms.poc.graph.impl.refs;
 
 import java.util.Objects;
 
-import org.opennms.poc.graph.api.NodeRef;
-
 public class NodeIdRef implements NodeRef {
 
     private final int nodeId;

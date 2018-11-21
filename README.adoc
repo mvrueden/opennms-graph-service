@@ -1,0 +1,34 @@
+= OpenNMS Graph Service Proof of Concept
+
+The goal is to provide some new thing in to OpenNMS which is the single line of access to all Graph related operations.
+The working title of this thing is `Graph Service`.
+
+== Terminology
+
+A *Graph* consists of any number of points with any number of connections in between.
+Usually these points are called *Nodes*, but as *Nodes* have a specific meaning in OpenNMS in the context of the `Graph Service` they are called *Vertices* (plural of *Vertex*).
+The connection between two *Vertices* are usually called *Link*, however it also has a specific meaning inside OpenNMS, thus it is called *Edge*.
+The following figure shows a *Graph* with five *Vertices* and four *Edges*.
+
+image::https://wiki.opennms.org/wiki/images/3/30/Toplogy-graph.png[]
+
+== Dilema
+
+As the general concept of a graph with vertices and edges is pretty simple, each use case the graph represents may not be that trivial.
+This leads to a very generic `Graph Model`, but on the other hand a very specific implementation.
+This means the `Graph Model` should be easily shared between modules and applications (e.g. for visualization) but also
+be able to be used for specific use-cases.
+For example the BSM and Enlinkd model would share the same generic model, but under the hood be able to store specific information, thus allowing to write e.g. a very generic UI.
+
+== Rules
+
+Based on the dilemma, the following rules apply to provide a very loose model, but be able to provide full flexibility for implemtnations.
+
+ - Each Graph must be uniquely identified.
+   This identifier is called a `namespace`.
+ - Each Vertex and Edge must be uniquely identified by an identifier.
+   This identifier is called an `id`.
+ - Each Vertex and Edge have the same `namespace` as the Graph they are part of.
+ - Each Graph, Vertex or Edge have additional properties to define their nature in more detail.
+   E.g. a Vertex may contain a `label`, `node` or `location` property.
+ - Each Edge contains the source and target id of the Vertex it connects, therefore is ALWAYS directed.

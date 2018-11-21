@@ -26,39 +26,10 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.rest;
+package org.opennms.poc.graph.impl.refs;
 
-import java.util.ArrayList;
-import java.util.List;
+// Reference to a node#
+// TODO MVR ??!
+public interface NodeRef {
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlRootElement;
-
-@XmlRootElement(name = "graph")
-@XmlAccessorType(XmlAccessType.FIELD)
-public class GraphDTO {
-
-    @XmlElementWrapper(name="vertices")
-    private List<VertexDTO> vertices = new ArrayList<>();
-
-    @XmlElementWrapper(name="links")
-    private List<LinkDTO> links = new ArrayList<>();
-
-    public List<VertexDTO> getVertices() {
-        return vertices;
-    }
-
-    public void setVertices(List<VertexDTO> vertices) {
-        this.vertices = vertices;
-    }
-
-    public List<LinkDTO> getLinks() {
-        return links;
-    }
-
-    public void setLinks(List<LinkDTO> links) {
-        this.links = links;
-    }
 }

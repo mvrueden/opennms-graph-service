@@ -28,13 +28,15 @@
 
 package org.opennms.poc.graph.impl;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.GraphProviderDescriptor;
-import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.generic.GenericEdge;
+import org.opennms.poc.graph.api.generic.GenericGraph;
+import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.listener.EventType;
 import org.opennms.poc.graph.api.listener.GraphListener;
 import org.opennms.poc.graph.api.listener.LinkEvent;
@@ -42,18 +44,14 @@ import org.opennms.poc.graph.api.listener.LinkEvent;
 import edu.uci.ics.jung.graph.DirectedSparseMultigraph;
 import edu.uci.ics.jung.graph.util.EdgeType;
 
-public class SimpleGraphProvider implements GraphProvider, GraphListener {
+// Partially builds a topology from GenericVertices and Edges
+public class PartialGraphProvider implements GraphProvider<GenericVertex, GenericEdge>, GraphListener {
 
-    private final edu.uci.ics.jung.graph.Graph graph = new DirectedSparseMultigraph<Vertex, Edge>();
+    private final edu.uci.ics.jung.graph.Graph<GenericVertex, GenericEdge> graph = new DirectedSparseMultigraph<>();
     private final String namespace;
 
-    public SimpleGraphProvider(String namespace) {
+    public PartialGraphProvider(String namespace) {
         this.namespace = Objects.requireNonNull(namespace);
-    }
-
-    @Override
-    public GraphProviderDescriptor getGraphProviderDescriptor() {
-        return new GraphProviderDescriptor(namespace);
     }
 
     @Override
@@ -62,35 +60,38 @@ public class SimpleGraphProvider implements GraphProvider, GraphListener {
     }
 
     @Override
-    public Graph getGraph() {
-        final DefaultGraph graph = new DefaultGraph(getNamespace());
-        graph.addVertices(this.graph.getVertices());
-        graph.addEdges(this.graph.getEdges());
+    public Graph<GenericVertex, GenericEdge> getGraph() {
+        final GenericGraph graph = new GenericGraph();
+        graph.setNamespace(namespace);
+        graph.addVertices(new ArrayList<>(this.graph.getVertices()));
+        graph.addEdges(new ArrayList<>(this.graph.getEdges()));
         return graph;
     }
 
     @Override
     public void linkEvent(LinkEvent event) {
+        // TODO MVR are these .asGeneric* method calls really necessary?
+        // TODO MVR the problem here is this call, as this is only knowing about the super type. and thus casting is impossible :(
         final Edge link = event.getLink();
         switch(event.getType()) {
             case LinkDiscovered:
-                final Vertex source = link.getSource();
-                final Vertex target = link.getTarget();
+                final GenericVertex source = link.getSource().asGenericVertex();
+                final GenericVertex target = link.getTarget().asGenericVertex();
                 if (!graph.containsVertex(source)) {
                     graph.addVertex(source);
                 }
                 if (!graph.containsVertex(target)) {
                     graph.addVertex(target);
                 }
-                graph.addEdge(link, source, target, EdgeType.DIRECTED);
+                graph.addEdge(link.asGenericEdge(), source, target, EdgeType.DIRECTED);
                 break;
             case LinkRemoved:
-                graph.removeEdge(link);
-                if (graph.getInEdges(link.getSource()).isEmpty() && graph.getOutEdges(link.getSource()).isEmpty()) {
-                    graph.removeVertex(link.getSource());
+                graph.removeEdge(link.asGenericEdge());
+                if (graph.getInEdges(link.getSource().asGenericVertex()).isEmpty() && graph.getOutEdges(link.getSource().asGenericVertex()).isEmpty()) {
+                    graph.removeVertex(link.getSource().asGenericVertex());
                 }
-                if (graph.getInEdges(link.getTarget()).isEmpty() && graph.getOutEdges(link.getTarget()).isEmpty()) {
-                    graph.removeVertex(link.getTarget());
+                if (graph.getInEdges(link.getTarget().asGenericVertex()).isEmpty() && graph.getOutEdges(link.getTarget().asGenericVertex()).isEmpty()) {
+                    graph.removeVertex(link.getTarget().asGenericVertex());
                 }
                 break;
             case LinkUpdated:
