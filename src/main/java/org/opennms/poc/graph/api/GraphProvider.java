@@ -35,6 +35,7 @@ public interface GraphProvider {
 
     String getNamespace();
 
+    // TODO MVR multiple graphs
     Graph getGraph();
 
 }

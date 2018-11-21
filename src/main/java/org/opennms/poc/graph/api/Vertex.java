@@ -28,7 +28,11 @@
 
 package org.opennms.poc.graph.api;
 
+import java.util.Map;
+
 public interface Vertex {
     String getNamespace();
     String getId();
+    // TODO MVR ???
+    Map<? extends String,?> getProperties();
 }

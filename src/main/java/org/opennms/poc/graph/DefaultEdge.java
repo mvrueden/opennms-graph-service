@@ -28,6 +28,8 @@
 
 package org.opennms.poc.graph;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Edge;
@@ -36,6 +38,7 @@ import org.opennms.poc.graph.api.Vertex;
 public class DefaultEdge implements Edge {
     private final Vertex source;
     private final Vertex target;
+    private Map<String, Object> properties = new HashMap<>();
 
     public DefaultEdge(Vertex source, Vertex target) {
         this.source = Objects.requireNonNull(source);
@@ -50,5 +53,28 @@ public class DefaultEdge implements Edge {
     @Override
     public Vertex getTarget() {
         return target;
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(HashMap<String, Object> properties) {
+        Objects.requireNonNull(properties);
+        this.properties.clear();
+        this.properties.putAll(properties);
+    }
+
+    public <T> T getProperty(String key) {
+        return (T) properties.get(key);
+    }
+
+    public <T> T getProperty(String key, T defaultValue) {
+        return (T) properties.getOrDefault(key, defaultValue);
+    }
+
+    public void setProperty(String key, Object value) {
+        properties.put(key, value);
     }
 }

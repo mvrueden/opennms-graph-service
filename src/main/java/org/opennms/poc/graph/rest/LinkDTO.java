@@ -28,6 +28,9 @@
 
 package org.opennms.poc.graph.rest;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -40,6 +43,7 @@ public class LinkDTO {
 
     private VertexDTO source;
     private VertexDTO target;
+    private Map<String, Object> properties = new HashMap<>();
 
     public LinkDTO() {
 
@@ -48,6 +52,7 @@ public class LinkDTO {
     public LinkDTO(Edge edge) {
         this.source = new VertexDTO(edge.getSource());
         this.target = new VertexDTO(edge.getTarget());
+        this.properties.putAll(edge.getProperties());
     }
 
     public VertexDTO getSource() {
@@ -64,5 +69,13 @@ public class LinkDTO {
 
     public void setTarget(VertexDTO target) {
         this.target = target;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

@@ -37,5 +37,6 @@ public interface Graph {
 
     String getNamespace();
 
-    Vertex getVertex(int id);
+    // TODO MVR make this more generic...
+    Vertex getVertex(String id);
 }

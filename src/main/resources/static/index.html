@@ -7,90 +7,136 @@
 
 <script type="application/javascript">
 
-    // Load data
-    // d3.json("https://gist.githubusercontent.com/mbostock/4062045/raw/5916d145c8c048a6e3086915a6be464467391c62/miserables.json")
     d3.json("http://localhost:8080/rest/graphs")
         .then(function(data) {
-            var links = data.links.map(function(link) {
-                return {
-                    "source": link.source.id,
-                    "target": link.target.id
-                };
-            });
-            const nodes = data.vertices.map(d => Object.create(d));
-            const height = 1024;
-            const width = 2048;
-            const scaleColor = d3.scaleOrdinal(d3.schemeCategory10);
+            console.log(data);
 
-            const simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.id))
-                .force("charge", d3.forceManyBody())
-                .force("center", d3.forceCenter()).on("tick", ticked);
-
-            const svg = d3.select("svg")
-                .attr("viewBox", [-width/2, -height/2, width, height]);
-
-            const link = svg.append("g")
-                .attr("stroke", "#999")
-                .attr("stroke-opacity", 0.6)
-                .selectAll("line")
-                .data(links)
-                .enter().append("line")
-                    .attr("class", "link")
-                    .attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y)
-                    .attr("stroke-width", d => d.value ? Math.sqrt(d.value) : 1)
-                .exit().remove()
-            ;
-
-            const node = svg.append("g")
-                .attr("stroke", "#fff")
-                .attr("stroke-width", 1.5)
-                .selectAll("circle")
-                .data(nodes)
-                .enter().append("circle")
-                    .attr("class", "node")
-                    .attr("r", 5)
-                    .attr("fill", function(d) {
-                        const color = scaleColor(d.id);
-                        return color;
-                    })
-                    .call(
-                        d3.drag()
-                            .on("start",  function dragstarted(d) {
-                                if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-                                d.fx = d.x;
-                                d.fy = d.y;
-                            })
-                            .on("drag", function dragged(d) {
-                                d.fx = d3.event.x;
-                                d.fy = d3.event.y;
-                            })
-                            .on("end", function dragended(d) {
-                                if (!d3.event.active) simulation.alphaTarget(0);
-                                d.fx = null;
-                                d.fy = null;
-                            })
-                    )
-                    .append("title").text(d => d.id)
+            d3.select("#namespaces")
+                .on('change',onchange)
+                .selectAll("option")
+                .data(data)
+                .enter()
+                    .append("option")
+                    .text(function (d) { return d; })
                 .exit().remove();
-            ;
 
-            function ticked() {
-                d3.selectAll(".link")
-                    .attr("x1", d => d.source.x ? d.source.x : 0)
-                    .attr("y1", d => d.source.y ? d.source.y : 30)
-                    .attr("x2", d => d.target.x ? d.target.x : -30)
-                    .attr("y2", d => d.target.y ? d.target.y : 30);
-
-                d3.selectAll(".node")
-                    .attr("cx", d => d.x)
-                    .attr("cy", d => d.y);
-            }
+            function onchange() {
+                const selectedNamespace = d3.select('#namespaces').property('value')
+                redrawGraph(selectedNamespace);
+            };
         });
 
+    function redrawGraph(namespace) {
+        d3.select("svg").selectAll("*").remove();
+        d3.select("#info").selectAll("*").remove();
+
+        // Load data
+        // d3.json("https://gist.githubusercontent.com/mbostock/4062045/raw/5916d145c8c048a6e3086915a6be464467391c62/miserables.json")
+        d3.json("http://localhost:8080/rest/graphs/" + namespace)
+            .then(function(data) {
+                var links = data.links.map(function(link) {
+                    return {
+                        "source": link.source.id,
+                        "target": link.target.id
+                    };
+                });
+                const nodes = data.vertices.map(d => Object.create(d));
+                const height = 512;
+                const width = 1024;
+                const scaleColor = d3.scaleOrdinal(d3.schemeCategory10);
+
+                const simulation = d3.forceSimulation(nodes)
+                    .force("link", d3.forceLink(links).id(d => d.id))
+                    .force("charge", d3.forceManyBody())
+                    .force("center", d3.forceCenter()).on("tick", ticked);
+
+                const svg = d3.select("svg")
+                    .attr("viewBox", [-width/2, -height/2, width, height]);
+
+                const link = svg.append("g")
+                    .attr("stroke", "#999")
+                    .attr("stroke-opacity", 0.6)
+                    .selectAll("line")
+                    .data(links)
+                    .enter().append("line")
+                        .attr("class", "link")
+                        .attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y)
+                        .attr("stroke-width", d => d.value ? Math.sqrt(d.value) : 1)
+                    .exit().remove()
+                ;
+
+                const node = svg.append("g")
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 1.5)
+                    .selectAll("circle")
+                    .data(nodes)
+                    .enter().append("circle")
+                        .attr("class", "node")
+                        .attr("r", 5)
+                        .attr("fill", function(d) {
+                            const color = scaleColor(d.id);
+                            return color;
+                        })
+                        .on("click", function(d) {
+                            console.log("clicked " + d.id, d);
+                            d3.select("#info").selectAll("*").remove();
+                            d3.select("#info")
+                                .append("div")
+                                .text(function() {
+                                    // Flatten as prototype properties etc are missing
+                                    var result = Object.create(d);
+                                    for(var key in result) {
+                                        result[key] = result[key];
+                                    }
+                                    console.log(JSON.stringify(result));
+                                    return JSON.stringify(result);
+                                });
+                        })
+                        .call(
+                            d3.drag()
+                                .on("start",  function dragstarted(d) {
+                                    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+                                    d.fx = d.x;
+                                    d.fy = d.y;
+                                })
+                                .on("drag", function dragged(d) {
+                                    d.fx = d3.event.x;
+                                    d.fy = d3.event.y;
+                                })
+                                .on("end", function dragended(d) {
+                                    if (!d3.event.active) simulation.alphaTarget(0);
+                                    d.fx = null;
+                                    d.fy = null;
+                                })
+                        )
+                        .append("title").text(d => d.id)
+                    .exit().remove();
+                ;
+
+                function ticked() {
+                    d3.selectAll(".link")
+                        .attr("x1", d => d.source.x ? d.source.x : 0)
+                        .attr("y1", d => d.source.y ? d.source.y : 30)
+                        .attr("x2", d => d.target.x ? d.target.x : -30)
+                        .attr("y2", d => d.target.y ? d.target.y : 30);
+
+                    d3.selectAll(".node")
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y);
+                }
+            });
+
+    }
 
 </script>
+<div>
+    <select id="namespaces">
+    </select>
+</div>
+<div id="info">
+
+</div>
 <svg></svg>

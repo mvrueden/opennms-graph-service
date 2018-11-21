@@ -28,6 +28,9 @@
 
 package org.opennms.poc.graph.rest;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -39,15 +42,15 @@ import org.opennms.poc.graph.api.Vertex;
 public class VertexDTO {
 
     private String namespace;
-
-
     private String id;
+    private Map<String, Object> properties = new HashMap<>();
 
     public VertexDTO() {
 
     }
 
     public VertexDTO(Vertex vertex) {
+        this.properties.putAll(vertex.getProperties());
         this.namespace = vertex.getNamespace();
         this.id = vertex.getId();
     }
@@ -66,5 +69,13 @@ public class VertexDTO {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

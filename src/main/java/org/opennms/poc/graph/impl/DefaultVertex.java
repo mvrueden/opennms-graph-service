@@ -28,27 +28,50 @@
 
 package org.opennms.poc.graph.impl;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Vertex;
 
+import com.google.common.collect.ImmutableMap;
+
 public class DefaultVertex implements Vertex {
 
-    private final String namespace;
-    private final int id;
+    private final Map<String, Object> properties = new HashMap<>();
 
     public DefaultVertex(String namespace, int id) {
-        this.namespace = Objects.requireNonNull(namespace);
-        this.id = id;
+        this(ImmutableMap.of("namespace", namespace, "id", "" + id));
+    }
+
+    public DefaultVertex(Map<String, Object> properties) {
+        this.properties.putAll(Objects.requireNonNull(properties));
     }
 
     @Override
     public String getNamespace() {
-        return namespace;
+        return getProperty("namespace");
     }
 
     @Override
     public String getId() {
-        return "" + id;
+        return getProperty("id");
+    }
+
+    public <T> T getProperty(String key) {
+        return (T) properties.get(key);
+    }
+
+    public <T> T getProperty(String key, T defaultValue) {
+        return (T) properties.getOrDefault(key, defaultValue);
+    }
+
+    public void setProperty(String key, Object value) {
+        properties.put(key, value);
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 }

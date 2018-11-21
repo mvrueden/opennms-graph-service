@@ -32,6 +32,7 @@ import java.util.Objects;
 
 import org.opennms.poc.graph.api.Edge;
 
+// TODO MVR namespace?
 public class LinkEvent {
     private final EventType type;
     private final Edge link;

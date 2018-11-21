@@ -63,8 +63,8 @@ public class DefaultGraph implements Graph {
     }
 
     @Override
-    public Vertex getVertex(int id) {
-        return vertices.stream().filter(v -> v.getId().equals("" + id)).findAny().orElseThrow(NoSuchElementException::new);
+    public Vertex getVertex(String id) {
+        return vertices.stream().filter(v -> v.getId().equals(id)).findAny().orElseThrow(NoSuchElementException::new);
     }
 
     public void addVertices(Collection<Vertex> vertices) {

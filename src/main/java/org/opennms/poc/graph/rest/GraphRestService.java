@@ -28,6 +28,7 @@
 
 package org.opennms.poc.graph.rest;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Graph;
@@ -35,6 +36,7 @@ import org.opennms.poc.graph.api.GraphService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,8 +48,13 @@ public class GraphRestService {
     private GraphService graphService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public GraphDTO getGraph() {
-        final Graph graph = graphService.getGraph("simple");
+    public List<String> listNamespaces() {
+        return graphService.getGraphs().stream().map(g -> g.getNamespace()).collect(Collectors.toList());
+    }
+
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="{namespace}")
+    public GraphDTO getGraph(@PathVariable(name="namespace") String namespace) {
+        final Graph graph = graphService.getGraph(namespace);
         GraphDTO g = new GraphDTO();
         g.setLinks(graph.getEdges().stream().map(e -> new LinkDTO(e)).collect(Collectors.toList()));
         g.setVertices(graph.getVertices().stream().map(v -> new VertexDTO(v)).collect(Collectors.toList()));
