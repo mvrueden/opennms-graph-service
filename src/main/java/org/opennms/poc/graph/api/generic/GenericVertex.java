@@ -47,6 +47,10 @@ public class GenericVertex extends AbstractElement implements Vertex {
         super(namespace, Integer.toString(id));
     }
 
+    public GenericVertex(String namespace, String id) {
+        super(namespace, id);
+    }
+
     @Override
     public GenericVertex asGenericVertex() {
         return this;

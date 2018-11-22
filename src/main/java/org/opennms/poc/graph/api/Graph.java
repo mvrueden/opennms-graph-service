@@ -45,6 +45,9 @@ public interface Graph<V extends Vertex, E extends Edge> {
 
     void addVertices(List<V> vertices);
 
+    void addVertices(V... vertices);
+    void addEdges(E... edges);
+
     // TODO MVR make this more generic...
     V getVertex(String id);
 }

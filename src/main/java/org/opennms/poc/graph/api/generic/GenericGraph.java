@@ -29,6 +29,7 @@
 package org.opennms.poc.graph.api.generic;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,16 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     @Override
     public void addVertices(List<GenericVertex> vertices) {
         this.vertices.addAll(vertices); // TODO MVR verify only add if not already added
+    }
+
+    @Override
+    public void addVertices(GenericVertex... vertices) {
+        addVertices(Arrays.asList(vertices));
+    }
+
+    @Override
+    public void addEdges(GenericEdge... edges) {
+        addEdges(Arrays.asList(edges));
     }
 
     @Override

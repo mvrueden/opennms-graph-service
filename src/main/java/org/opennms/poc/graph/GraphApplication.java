@@ -11,6 +11,7 @@ import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.listener.EventType;
 import org.opennms.poc.graph.api.listener.LinkEvent;
+import org.opennms.poc.graph.impl.bsm.BsmGraphProvider;
 import org.opennms.poc.graph.impl.DefaultGraphService;
 import org.opennms.poc.graph.impl.GraphmlProvider;
 import org.opennms.poc.graph.impl.PartialGraphProvider;
@@ -37,10 +38,14 @@ public class GraphApplication {
 	@Autowired
 	private DefaultGraphService graphService;
 
+	@Autowired
+	private BsmGraphProvider bsmGraphProvider;
+
 	@Scheduled(initialDelay = 5000, fixedDelay = 60 * 1000 * 60 * 24)
 	public void initializeGraphProvider() throws InvalidGraphException {
 		graphService.onBind(new GraphmlProvider(getClass().getResourceAsStream("/graphml-graph.xml")), new HashMap());
 		graphService.onBind((GraphProvider) new PartialGraphProvider(NAMESPACE), new HashMap<>());
+		graphService.onBind(bsmGraphProvider, new HashMap());
 		graphService.onBind(event -> {
 			LOG.info("New event of type {} received.", event.getType());
 //			final Graph g = graphService.getGraph(NAMESPACE);
