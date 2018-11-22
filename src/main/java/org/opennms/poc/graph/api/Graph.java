@@ -32,7 +32,7 @@ import java.util.List;
 
 import org.opennms.poc.graph.api.generic.GenericGraph;
 
-public interface Graph<V extends Vertex, E extends Edge> {
+public interface Graph<V extends Vertex, E extends Edge<V>> {
     List<V> getVertices();
 
     List<E> getEdges();

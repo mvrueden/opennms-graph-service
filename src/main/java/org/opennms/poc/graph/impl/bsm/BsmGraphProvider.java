@@ -34,9 +34,7 @@ import org.opennms.netmgt.bsm.service.model.graph.GraphEdge;
 import org.opennms.netmgt.bsm.service.model.graph.GraphVertex;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.generic.GenericEdge;
-import org.opennms.poc.graph.api.generic.GenericGraph;
-import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -64,16 +62,14 @@ public class BsmGraphProvider implements GraphProvider {
     @Override
     public Graph getGraph() {
         final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
-        final GenericGraph targetGraph = new GenericGraph();
-        targetGraph.setNamespace(NAMESPACE);
-        targetGraph.setId(NAMESPACE);
+        final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
         for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
             addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
         }
         return targetGraph;
     }
 
-    private void addVertex(BusinessServiceGraph sourceGraph, Graph<GenericVertex, GenericEdge> targetGraph, GraphVertex sourceVertex, AbstractVertex targetVertex) {
+    private void addVertex(BusinessServiceGraph sourceGraph, Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>>  targetGraph, GraphVertex sourceVertex, AbstractVertex targetVertex) {
         if (targetVertex == null) {
             // Create a topology vertex for the current vertex
             targetVertex = convertSourceVertex(sourceVertex);
@@ -93,7 +89,7 @@ public class BsmGraphProvider implements GraphProvider {
             targetGraph.addVertices(targetChildVertex);
 
             // Connect the two
-            final GenericEdge edge = new BusinessServiceEdge(sourceEdge, targetVertex, targetChildVertex);
+            final BusinessServiceEdge edge = new BusinessServiceEdge(sourceEdge, targetVertex, targetChildVertex);
             targetGraph.addEdges(edge);
 
             // Recurse

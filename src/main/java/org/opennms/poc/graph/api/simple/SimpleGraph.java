@@ -26,66 +26,77 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.generic;
+package org.opennms.poc.graph.api.simple;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.generic.GenericGraph;
 
 // TODO MVR enforce namespace
-public class GenericGraph extends AbstractElement implements Graph<GenericVertex, GenericEdge> {
+// TODO MVR this is basically a copy of GenericGraph :'(
+public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implements Graph<V, E> {
+    private final List<V> vertices = new ArrayList<>();
+    private final List<E> edges = new ArrayList<>();
+    private final String namespace;
 
-    private final List<GenericVertex> vertices = new ArrayList<>();
-    private final List<GenericEdge> edges = new ArrayList<>();
-
-    public GenericGraph() {}
-
-    public GenericGraph(Map<String, Object> properties) {
-        setProperties(properties);
+    public SimpleGraph(String namespace) {
+        this.namespace = namespace;
     }
 
     @Override
-    public List<GenericVertex> getVertices() {
+    public List<V> getVertices() {
         return Collections.unmodifiableList(vertices);
     }
 
     @Override
-    public List<GenericEdge> getEdges() {
+    public List<E> getEdges() {
         return Collections.unmodifiableList(edges);
     }
 
     @Override
-    public GenericVertex getVertex(String id) {
-        return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElseThrow(() -> new NoSuchElementException("No vertex available with id [" + id + "]"));
+    public String getNamespace() {
+        return namespace;
     }
 
     @Override
-    public void addEdges(List<GenericEdge> edges) {
-        this.edges.addAll(edges); // TODO MVR verify only add if not already added
+    public void addEdges(List<E> edges) {
+        edges.addAll(edges);
     }
 
     @Override
-    public void addVertices(List<GenericVertex> vertices) {
-        this.vertices.addAll(vertices); // TODO MVR verify only add if not already added
+    public void addVertices(List<V> vertices) {
+        vertices.addAll(vertices);
     }
 
     @Override
-    public void addVertices(GenericVertex... vertices) {
+    public void addVertices(V... vertices) {
         addVertices(Arrays.asList(vertices));
     }
 
     @Override
-    public void addEdges(GenericEdge... edges) {
+    public void addEdges(E... edges) {
         addEdges(Arrays.asList(edges));
     }
 
     @Override
-    public GenericGraph asGenericGraph() {
-        return this;
+    public V getVertex(String id) {
+        return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElseThrow(() -> new NoSuchElementException("No vertex available with id [" + id + "]"));
     }
+
+    @Override
+    public GenericGraph asGenericGraph() {
+        final GenericGraph graph = new GenericGraph();
+        graph.setNamespace(getNamespace());
+        getVertices().stream().map(Vertex::asGenericVertex).forEach(graph::addVertices);
+        getEdges().stream().map(Edge::asGenericEdge).forEach(graph::addEdges);
+        return graph;
+    }
+
 }

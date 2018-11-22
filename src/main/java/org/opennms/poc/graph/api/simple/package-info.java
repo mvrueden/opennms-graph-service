@@ -26,40 +26,8 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.generic;
-
-import java.util.Objects;
-
-import org.opennms.poc.graph.api.Edge;
-import org.opennms.poc.graph.api.Vertex;
-
-public class GenericEdge extends AbstractElement implements Edge<GenericVertex> {
-    private final GenericVertex source;
-    private final GenericVertex target;
-
-    // TODO MVR set namespace and id
-    public GenericEdge(Vertex source, Vertex target) {
-        this(Objects.requireNonNull(source).asGenericVertex(),
-             Objects.requireNonNull(target).asGenericVertex());
-    }
-
-    public GenericEdge(GenericVertex source, GenericVertex target) {
-        this.source = source;
-        this.target = target;
-    }
-
-    @Override
-    public GenericVertex getSource() {
-        return source;
-    }
-
-    @Override
-    public GenericVertex getTarget() {
-        return target;
-    }
-
-    @Override
-    public GenericEdge asGenericEdge() {
-        return this;
-    }
-}
+/**
+ * Very similar to the generic model.
+ * The main difference is, that the objects here are more Java friendly and no simple key/value stores.
+ */
+package org.opennms.poc.graph.api.simple;

@@ -33,7 +33,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.opennms.netmgt.bsm.service.model.graph.GraphVertex;
-import org.opennms.poc.graph.api.generic.GenericVertex;
 
 import com.google.common.collect.Sets;
 
@@ -50,6 +49,8 @@ public class ReductionKeyVertex extends AbstractVertex {
 
     public ReductionKeyVertex(String reductionKey, int level) {
         super(Type.ReductionKey + ":" + reductionKey, getLabelFromReductionKey(reductionKey), level);
+        setTooltip(String.format("Reduction Key '%s'", reductionKey));
+        setIconKey("bsm.reduction-key");
         this.reductionKey = reductionKey;
     }
 
@@ -67,30 +68,13 @@ public class ReductionKeyVertex extends AbstractVertex {
         return label;
     }
 
-    public String getReductionKey() {
-        return reductionKey;
-    }
-
     @Override
     public Type getType() {
         return Type.ReductionKey;
     }
 
     @Override
-    public boolean isLeaf() {
-        return true;
-    }
-
-    @Override
     public Set<String> getReductionKeys() {
         return Sets.newHashSet(reductionKey);
-    }
-
-    @Override
-    public GenericVertex asGenericVertex() {
-        final GenericVertex vertex = new GenericVertex();
-        vertex.setProperty("tooltip", String.format("Reduction Key '%s'", reductionKey));
-        vertex.setProperty("icon", "bsm.reduction-key");
-        return vertex;
     }
 }

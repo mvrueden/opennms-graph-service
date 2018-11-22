@@ -31,14 +31,16 @@ package org.opennms.poc.graph.impl.bsm;
 import org.opennms.netmgt.bsm.service.model.functions.map.MapFunction;
 import org.opennms.netmgt.bsm.service.model.graph.GraphEdge;
 import org.opennms.poc.graph.api.generic.GenericEdge;
+import org.opennms.poc.graph.api.simple.SimpleEdge;
 
-public class BusinessServiceEdge<V extends AbstractVertex> extends GenericEdge {
+public class BusinessServiceEdge<V extends AbstractVertex> extends SimpleEdge<V> {
 
     private final MapFunction mapFunction;
     private final float weight;
 
     public BusinessServiceEdge(GraphEdge graphEdge, V source, V target) {
         super(source, target);
+        setTooltip(String.format("Map function: %s, Weight: %s", getMapFunction().getClass().getSimpleName(), getWeight()));
         this.mapFunction = graphEdge.getMapFunction();
         this.weight = graphEdge.getWeight();
     }
@@ -63,9 +65,7 @@ public class BusinessServiceEdge<V extends AbstractVertex> extends GenericEdge {
 
     @Override
     public GenericEdge asGenericEdge() {
-        final GenericEdge genericEdge = new GenericEdge(getSource(), getTarget());
-        genericEdge.setProperty("label", String.format("connection:%s:%s", getSource().getId(), getTarget().getId()));
-        genericEdge.setProperty("tooltip", String.format("Map function: %s, Weight: %s", getMapFunction().getClass().getSimpleName(), getWeight()));
+        final GenericEdge genericEdge = super.asGenericEdge();
         genericEdge.setProperty("mapFunction", mapFunction.getClass().getSimpleName().toLowerCase());
         genericEdge.setProperty("weight", weight);
         return genericEdge;

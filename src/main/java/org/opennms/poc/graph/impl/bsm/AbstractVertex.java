@@ -32,8 +32,9 @@ import java.util.Set;
 
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.simple.SimpleVertex;
 
-public abstract class AbstractVertex extends GenericVertex implements Vertex {
+public abstract class AbstractVertex extends SimpleVertex implements Vertex {
 
     enum Type {
         BusinessService,
@@ -42,9 +43,6 @@ public abstract class AbstractVertex extends GenericVertex implements Vertex {
     }
 
     protected final int level;
-    protected final String namespace;
-    protected final String id;
-    protected String label;
 
     /**
      * Creates a new {@link AbstractVertex}.
@@ -53,42 +51,22 @@ public abstract class AbstractVertex extends GenericVertex implements Vertex {
      * @param level the level of the vertex in the Business Service Hierarchy. The root element is level 0.
      */
     protected AbstractVertex(String id, String label, int level) {
-        this.namespace = BsmGraphProvider.NAMESPACE;
-        this.id = id;
-        this.label = label;
+        super(BsmGraphProvider.NAMESPACE, id);
+        setLabel(label);
         this.level = level;
     }
 
     @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    @Override
-    public String getId() {
-        return id;
-    }
-
-    @Override
     public GenericVertex asGenericVertex() {
-        final GenericVertex vertex = new GenericVertex(getNamespace(), getId());
+        final GenericVertex vertex = super.asGenericVertex();
         vertex.setProperty("level", level);
-        vertex.setProperty("label", label);
         vertex.setProperty("type", getType());
         vertex.setProperty("reductionKeys", getReductionKeys());
         return vertex;
     }
 
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public abstract boolean isLeaf();
-
     public abstract Type getType();
 
     public abstract Set<String> getReductionKeys();
 
-//    public abstract <T> T accept(BusinessServiceVertexVisitor<T> visitor);
 }

@@ -50,6 +50,8 @@ public class BusinessServiceVertex extends AbstractVertex {
 
     public BusinessServiceVertex(Long serviceId, String name, int level) {
         super(Type.BusinessService + ":" + serviceId, name, level);
+        setTooltip(String.format("Business Service '%s'", name));
+        setIconKey("bsm.business-service");
         this.serviceId = serviceId;
     }
 
@@ -68,16 +70,9 @@ public class BusinessServiceVertex extends AbstractVertex {
     }
 
     @Override
-    public boolean isLeaf() {
-        return false;
-    }
-
-    @Override
     public GenericVertex asGenericVertex() {
         final GenericVertex vertex = super.asGenericVertex();
-        vertex.setProperty("tooltip", String.format("Business Service '%s'", label));
         vertex.setProperty("serviceId", serviceId);
-        vertex.setProperty("icon", "bsm.business-service");
         return vertex;
     }
 }

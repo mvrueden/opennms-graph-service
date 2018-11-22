@@ -92,15 +92,15 @@ public class DefaultGraphService implements GraphService {
     }
 
     @Override
-    public List<Graph<? super Vertex, ? super Edge>> getGraphs() {
+    public List<Graph<? extends Vertex, ? extends Edge<? extends Vertex>>> getGraphs() {
         return providers.values()
                 .stream()
-                .map(p -> (Graph<Vertex, Edge>) p.getGraph())
+                .map(p -> (Graph<Vertex, Edge<Vertex>>) p.getGraph())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public <V extends Vertex, E extends Edge> Graph<V, E> getGraph(String namespace) {
+    public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace) {
         final GraphProvider graphProvider = providers.get(namespace);
         if (graphProvider == null) {
             throw new NoSuchElementException("There is no graph provider registered for namespace [" + namespace + "]");
@@ -109,7 +109,7 @@ public class DefaultGraphService implements GraphService {
     }
 
     @Override
-    public <V extends Vertex, E extends Edge> Graph<V, E> getGraph(Query query) {
+    public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(Query query) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

@@ -34,9 +34,9 @@ import org.opennms.poc.graph.api.listener.GraphListener;
 
 public interface GraphService extends GraphListener {
 
-    List<Graph<? super Vertex, ? super Edge>> getGraphs();
+    List<Graph<? extends Vertex, ? extends Edge<? extends Vertex>>> getGraphs();
 
-    <V extends Vertex, E extends Edge> Graph<V, E> getGraph(String namespace);
+    <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace);
 
-    <V extends Vertex, E extends Edge> Graph<V, E> getGraph(Query query);
+    <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(Query query);
 }

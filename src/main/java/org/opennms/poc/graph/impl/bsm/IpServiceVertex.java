@@ -56,6 +56,8 @@ public class IpServiceVertex extends AbstractVertex {
 
     private IpServiceVertex(int ipServiceId, String ipServiceName, String ipAddress, Set<String> reductionKeys, int nodeId, int level) {
         super(Type.IpService + ":" + ipServiceId, ipServiceName, level);
+        setTooltip(String.format("IP Service '%s' on %s", ipServiceName, ipAddress));
+        setIconKey("bsm.ip-service");
         this.ipServiceId = ipServiceId;
         this.reductionKeys = reductionKeys;
         this.ipAddress = ipAddress;
@@ -72,11 +74,6 @@ public class IpServiceVertex extends AbstractVertex {
     }
 
     @Override
-    public boolean isLeaf() {
-        return true;
-    }
-
-    @Override
     public Set<String> getReductionKeys() {
         return reductionKeys;
     }
@@ -86,8 +83,6 @@ public class IpServiceVertex extends AbstractVertex {
         final GenericVertex vertex = super.asGenericVertex();
         vertex.setProperty("ipAddress", ipAddress);
         vertex.setProperty("serviceId", getIpServiceId());
-        vertex.setProperty("tooltip", String.format("IP Service '%s' on %s", label, ipAddress));
-        vertex.setProperty("icon", "bsm.ip-service");
         vertex.setProperty("nodeId", nodeId);
         return vertex;
     }

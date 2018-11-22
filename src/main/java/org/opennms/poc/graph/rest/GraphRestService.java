@@ -61,7 +61,7 @@ public class GraphRestService {
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="{namespace}")
     public JSONObject getGraph(@PathVariable(name="namespace") String namespace) {
-        final Graph<Vertex, Edge> graph = graphService.getGraph(namespace);
+        final Graph<Vertex, Edge<Vertex>> graph = graphService.getGraph(namespace);
         final JSONObject jsonGraph = new JSONObject();
         final JSONArray edgesArray = new JSONArray();
         final JSONArray verticesArray = new JSONArray();

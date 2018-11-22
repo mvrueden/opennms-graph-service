@@ -66,19 +66,19 @@ public class AbstractElement {
     }
 
     public String getNamespace() {
-        return getProperty("namespace");
+        return getProperty(GenericProperties.NAMESPACE);
     }
 
     public void setNamespace(String namespace) {
-        setProperty("namespace", namespace);
+        setProperty(GenericProperties.NAMESPACE, namespace);
     }
 
     public String getId() {
-        return getProperty("id");
+        return getProperty(GenericProperties.ID);
     }
 
     public void setId(String id) {
-        setProperty("id", id);
+        setProperty(GenericProperties.ID, id);
     }
 
 }

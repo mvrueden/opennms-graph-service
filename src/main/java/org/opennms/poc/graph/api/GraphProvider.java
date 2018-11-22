@@ -28,7 +28,7 @@
 
 package org.opennms.poc.graph.api;
 
-public interface GraphProvider<V extends Vertex, E extends Edge> {
+public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
 
     String getNamespace();
 
