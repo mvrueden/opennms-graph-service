@@ -40,9 +40,9 @@ public class BusinessServiceEdge<V extends AbstractVertex> extends SimpleEdge<V>
 
     public BusinessServiceEdge(GraphEdge graphEdge, V source, V target) {
         super(source, target);
-        setTooltip(String.format("Map function: %s, Weight: %s", getMapFunction().getClass().getSimpleName(), getWeight()));
         this.mapFunction = graphEdge.getMapFunction();
         this.weight = graphEdge.getWeight();
+        setTooltip(String.format("Map function: %s, Weight: %s", getMapFunction().getClass().getSimpleName(), getWeight()));
     }
 
     @Override

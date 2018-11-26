@@ -26,8 +26,15 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.listener;
+package org.opennms.poc.graph.impl.vmware;
 
-public interface GraphListener {
+import org.opennms.poc.graph.api.simple.SimpleEdge;
 
+public class VmwareEdge extends SimpleEdge<VmwareVertex> {
+    public VmwareEdge(VmwareVertex source, VmwareVertex target) {
+        super(source, target);
+    }
+//    public VmwareEdge(String id) {
+//        super(VmwareDiscovery.NAMESPACE, id);
+//    }
 }

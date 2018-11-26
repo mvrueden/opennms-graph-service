@@ -41,6 +41,8 @@ import org.opennms.poc.graph.api.listener.EventType;
 import org.opennms.poc.graph.api.listener.GraphListener;
 import org.opennms.poc.graph.api.listener.LinkEvent;
 
+import com.google.common.eventbus.Subscribe;
+
 import edu.uci.ics.jung.graph.DirectedSparseMultigraph;
 import edu.uci.ics.jung.graph.util.EdgeType;
 
@@ -68,7 +70,7 @@ public class PartialGraphProvider implements GraphProvider<GenericVertex, Generi
         return graph;
     }
 
-    @Override
+    @Subscribe
     public void linkEvent(LinkEvent event) {
         // TODO MVR are these .asGeneric* method calls really necessary?
         // TODO MVR the problem here is this call, as this is only knowing about the super type. and thus casting is impossible :(

@@ -28,7 +28,6 @@
 
 package org.opennms.poc.graph.impl;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,23 +41,25 @@ import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.events.Event;
 import org.opennms.poc.graph.api.listener.GraphListener;
-import org.opennms.poc.graph.api.listener.LinkEvent;
 import org.springframework.stereotype.Service;
+
+import com.google.common.eventbus.EventBus;
 
 // How would this listen to events in the first place?
 @Service
 public class DefaultGraphService implements GraphService {
 
+    private EventBus eventBus = new EventBus();
     private Map<String, GraphProvider> providers = new HashMap<>();
-    private List<GraphListener> listeners = new ArrayList<>();
 
     public void onBind(GraphListener listener, Map properties) {
-        listeners.add(listener);
+        eventBus.register(listener);
     }
 
     public void onUnbind(GraphListener listener, Map properties) {
-        listeners.remove(listener);
+        eventBus.unregister(listener);
     }
 
     // OSGi-Hook
@@ -70,26 +71,19 @@ public class DefaultGraphService implements GraphService {
             throw new IllegalStateException("Provider for namespace [" + namespace + "] already registered");
         }
         providers.put(namespace, provider);
-
-        // Register if listening to events
-        if (provider instanceof GraphListener) {
-            registerListener((GraphListener) provider);
-        }
+        eventBus.register(provider);
     }
 
     // OSGi-Hook
     public void onUnbind(GraphProvider provider, Map properties) {
         final String namespace = provider.getNamespace();
         providers.remove(namespace);
-        if (provider instanceof GraphListener) {
-            unregisterListener((GraphListener) provider);
-        }
+        eventBus.unregister(provider);
     }
 
-    @Override
-    public void linkEvent(final LinkEvent event) {
-        listeners.forEach(listener -> listener.linkEvent(event));
-    }
+//    public void linkEvent(final LinkEvent event) {
+//        listeners.forEach(listener -> listener.linkEvent(event));
+//    }
 
     @Override
     public List<Graph<? extends Vertex, ? extends Edge<? extends Vertex>>> getGraphs() {
@@ -113,13 +107,12 @@ public class DefaultGraphService implements GraphService {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private void registerListener(GraphListener graphProvider) {
-        if (!listeners.contains(graphProvider)) {
-            listeners.add(graphProvider);
-        }
+    @Override
+    public <EVENT extends Event> void dispatchEvent(EVENT event) {
+        eventBus.post(event);
     }
 
-    private void unregisterListener(GraphListener provider) {
-        listeners.remove(provider);
+    public EventBus getEventBus() {
+        return eventBus;
     }
 }

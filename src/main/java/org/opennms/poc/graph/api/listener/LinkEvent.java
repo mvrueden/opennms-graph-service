@@ -31,9 +31,10 @@ package org.opennms.poc.graph.api.listener;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.events.Event;
 
-// TODO MVR namespace?
-public class LinkEvent {
+// Custom Event
+public class LinkEvent implements Event {
     private final EventType type;
     private final Edge link;
 
@@ -48,5 +49,10 @@ public class LinkEvent {
 
     public Edge getLink() {
         return link;
+    }
+
+    @Override
+    public String getNamespace() {
+        return link.getNamespace();
     }
 }

@@ -43,6 +43,9 @@ import com.google.common.collect.Lists;
 
 // TODO MVR enforce namespace
 // TODO MVR this is basically a copy of GenericGraph :'(
+// TODO MVR implement duplication detection (e.g. adding same vertex twice
+// and as well as adding different edges with different source/target vertices, should add each vertex only once,
+// maybe not here, but at some point that check should be implemented)
 public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implements Graph<V, E> {
     private final List<V> vertices = new ArrayList<>();
     private final List<E> edges = new ArrayList<>();

@@ -26,8 +26,53 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.listener;
+package org.opennms.poc.graph.impl.vmware;
 
-public interface GraphListener {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
 
+public class HostSystemVertex extends VmwareVertex {
+    private List<String> ipAddresses = new ArrayList<>();
+    private short numCpuCores;
+    private float memorySizeInMb;
+    private PowerState powerState;
+
+    public HostSystemVertex(String id) {
+        super(id);
+    }
+
+    public void setIpAddresses(TreeSet<String> ipAddresses) {
+        this.ipAddresses = new ArrayList<>(ipAddresses);
+    }
+
+    public void setCpuCores(short numCpuCores) {
+        this.numCpuCores = numCpuCores;
+    }
+
+    public void setMemorySize(float memorySizeInMb) {
+        this.memorySizeInMb = memorySizeInMb;
+    }
+
+    public void setPowerState(PowerState powerState) {
+        this.powerState = powerState;
+    }
+
+    public List<String> getIpAddresses() {
+        return ipAddresses;
+    }
+
+    public short getNumCpuCores() {
+        return numCpuCores;
+    }
+
+    public float getMemorySizeInMb() {
+        return memorySizeInMb;
+    }
+
+    public PowerState getPowerState() {
+        return powerState;
+    }
+
+    // TODO MVR asGenericInfo
 }

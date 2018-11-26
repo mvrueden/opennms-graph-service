@@ -36,8 +36,8 @@ public class SimpleVertex implements Vertex {
 
     private final String namespace;
     private final String id;
-    private String iconKey;
-    private String tooltip;
+    private String iconKey; // TODO MVR remove me
+    private String tooltip; // TODO MVR remove me
     private String label;
 
     public SimpleVertex(String namespace, String id) {

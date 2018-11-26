@@ -26,8 +26,12 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.listener;
+package org.opennms.poc.graph.impl.vmware;
 
-public interface GraphListener {
+import org.opennms.poc.graph.api.simple.SimpleVertex;
 
+public class VmwareVertex extends SimpleVertex {
+    public VmwareVertex(String id) {
+        super(VmwareImporter.NAMESPACE, id);
+    }
 }

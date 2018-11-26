@@ -26,8 +26,32 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.listener;
+package org.opennms.poc.graph.impl.vmware;
 
-public interface GraphListener {
+import java.util.Objects;
 
+public enum PowerState {
+    Unknown("unknown"),
+    PoweredOn("poweredOn"),
+    PoweredOff("poweredOff"),
+    Suspended("suspended"),
+    StandBy("standBy");
+
+    private final String label;
+
+    PowerState(String label) {
+        this.label = Objects.requireNonNull(label);
+    }
+
+    public static PowerState from(String powerState) {
+        if ("".equals(powerState) || powerState == null) {
+            return PowerState.Unknown;
+        }
+        for (PowerState eachState : values()) {
+            if (eachState.label.equalsIgnoreCase(powerState)) {
+                return eachState;
+            }
+        }
+        return PowerState.Unknown;
+    }
 }

@@ -30,6 +30,7 @@ package org.opennms.poc.graph.api;
 
 import java.util.List;
 
+import org.opennms.poc.graph.api.events.Event;
 import org.opennms.poc.graph.api.listener.GraphListener;
 
 public interface GraphService extends GraphListener {
@@ -39,4 +40,6 @@ public interface GraphService extends GraphListener {
     <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace);
 
     <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(Query query);
+
+    <EVENT extends Event> void dispatchEvent(EVENT event);
 }
