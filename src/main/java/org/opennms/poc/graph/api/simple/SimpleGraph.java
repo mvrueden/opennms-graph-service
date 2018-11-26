@@ -29,15 +29,17 @@
 package org.opennms.poc.graph.api.simple;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericGraph;
+
+import com.google.common.collect.Lists;
 
 // TODO MVR enforce namespace
 // TODO MVR this is basically a copy of GenericGraph :'(
@@ -67,22 +69,24 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
 
     @Override
     public void addEdges(List<E> edges) {
-        edges.addAll(edges);
+        this.edges.addAll(edges);
     }
 
     @Override
     public void addVertices(List<V> vertices) {
-        vertices.addAll(vertices);
+        this.vertices.addAll(vertices);
     }
 
     @Override
-    public void addVertices(V... vertices) {
-        addVertices(Arrays.asList(vertices));
+    public void addVertex(V vertex) {
+        Objects.requireNonNull(vertex);
+        addVertices(Lists.newArrayList(vertex));
     }
 
     @Override
-    public void addEdges(E... edges) {
-        addEdges(Arrays.asList(edges));
+    public void addEdge(E edge) {
+        Objects.requireNonNull(edge);
+        addEdges(Lists.newArrayList(edge));
     }
 
     @Override
@@ -94,8 +98,8 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     public GenericGraph asGenericGraph() {
         final GenericGraph graph = new GenericGraph();
         graph.setNamespace(getNamespace());
-        getVertices().stream().map(Vertex::asGenericVertex).forEach(graph::addVertices);
-        getEdges().stream().map(Edge::asGenericEdge).forEach(graph::addEdges);
+        getVertices().stream().map(Vertex::asGenericVertex).forEach(graph::addVertex);
+        getEdges().stream().map(Edge::asGenericEdge).forEach(graph::addEdge);
         return graph;
     }
 

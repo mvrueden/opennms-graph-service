@@ -73,7 +73,7 @@ public class BsmGraphProvider implements GraphProvider {
         if (targetVertex == null) {
             // Create a topology vertex for the current vertex
             targetVertex = convertSourceVertex(sourceVertex);
-            targetGraph.addVertices(targetVertex);
+            targetGraph.addVertex(targetVertex);
         }
 
         for (GraphEdge sourceEdge : sourceGraph.getOutEdges(sourceVertex)) {
@@ -86,11 +86,11 @@ public class BsmGraphProvider implements GraphProvider {
                     .filter(s -> !Strings.isNullOrEmpty(s))
                     .findFirst()
                     .ifPresent(targetChildVertex::setLabel);
-            targetGraph.addVertices(targetChildVertex);
+            targetGraph.addVertex(targetChildVertex);
 
             // Connect the two
             final BusinessServiceEdge edge = new BusinessServiceEdge(sourceEdge, targetVertex, targetChildVertex);
-            targetGraph.addEdges(edge);
+            targetGraph.addEdge(edge);
 
             // Recurse
             addVertex(sourceGraph, targetGraph, sourceChildVertex, targetChildVertex);

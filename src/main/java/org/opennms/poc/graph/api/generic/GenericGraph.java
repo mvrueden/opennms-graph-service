@@ -29,13 +29,15 @@
 package org.opennms.poc.graph.api.generic;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import org.opennms.poc.graph.api.Graph;
+
+import com.google.common.collect.Lists;
 
 // TODO MVR enforce namespace
 public class GenericGraph extends AbstractElement implements Graph<GenericVertex, GenericEdge> {
@@ -75,13 +77,15 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     }
 
     @Override
-    public void addVertices(GenericVertex... vertices) {
-        addVertices(Arrays.asList(vertices));
+    public void addVertex(GenericVertex vertex) {
+        Objects.requireNonNull(vertex);
+        addVertices(Lists.newArrayList(vertex));
     }
 
     @Override
-    public void addEdges(GenericEdge... edges) {
-        addEdges(Arrays.asList(edges));
+    public void addEdge(GenericEdge edge) {
+        Objects.requireNonNull(edge);
+        addEdges(Lists.newArrayList(edge));
     }
 
     @Override

@@ -66,7 +66,7 @@ public class SimpleEdge<V extends SimpleVertex> implements Edge<V> {
 
     @Override
     public V getTarget() {
-        return source;
+        return target;
     }
 
     public String getLabel() {

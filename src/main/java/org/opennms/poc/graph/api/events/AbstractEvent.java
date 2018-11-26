@@ -26,28 +26,18 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.events;
 
-import java.util.List;
+public abstract class AbstractEvent implements Event {
 
-import org.opennms.poc.graph.api.generic.GenericGraph;
+    private final String namespace;
 
-public interface Graph<V extends Vertex, E extends Edge<V>> {
-    List<V> getVertices();
+    public AbstractEvent(String namespace) {
+        this.namespace = namespace;
+    }
 
-    List<E> getEdges();
-
-    String getNamespace();
-
-    GenericGraph asGenericGraph();
-
-    void addEdges(List<E> edges);
-
-    void addVertices(List<V> vertices);
-
-    void addVertex(V vertex);
-    void addEdge(E edge);
-
-    // TODO MVR make this more generic...
-    V getVertex(String id);
+    @Override
+    public String getNamespace() {
+        return namespace;
+    }
 }
