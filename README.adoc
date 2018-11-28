@@ -32,3 +32,67 @@ Based on the dilemma, the following rules apply to provide a very loose model, b
  - Each Graph, Vertex or Edge have additional properties to define their nature in more detail.
    E.g. a Vertex may contain a `label`, `node` or `location` property.
  - Each Edge contains the source and target id of the Vertex it connects, therefore is ALWAYS directed.
+
+== Notes
+
+=== Events
+* Build a graph via Events (AddVertexEvent, AddEdgeEvent, etc.)
+* Each event should contain the concrete implementation of a vertex or edge, e.g. BsmVertex vs. VmwareVertex, etc.
+* However, they all should be a GenericVertex/Edge in the end
+* If adding, updating and removing is supported, implementing update is tricky for services, e.g. VmwareImporter
+** Basically, when is graph creation finished to decide if nodes should be removed or added.
+   E.g. VmwareImporter runs twice a day and previous nodes must all be removed. Logic of that must live then in the Importer, which will probably lead
+   to a general "RemoveVertexEvent" for all existing vertices, which kinda contradicts the whole purpose
+   Proposal: Lifecycle, with events: GraphCreationStartedEvent/GraphCreationEndEvent to indicate a new "import".
+   However, this leads to the problem, that the importer must know how to create the graph.
+* Also when building the Graph, it should be possible to have access to the currently build one (vertices and eges)
+  With current approach not easily done.
+* The old "StatusProvider" logic could either be implemented using the Enrichment mechanism (see below) or an "Enrichment/Update"-Event in order to update the state of a vertex
+  E.g a graph could listen for "NodeDown"-Events and mark a vertex as down accordingly.
+
+=== Multiple Graphs (e.g. Navigate To)
+
+Multiple graphs was not considered so far.
+However could be implemented by simply allow graphs with mixed namespaces.
+Each Vertex has one namespace, whereas the source and target Vertices of an Edge may differ.
+
+=== Searching
+
+The "GraphProvider" should implement some kind of search mechanism, which provides search suggestions without querying the graph itself.
+
+=== Enrichment (Thoughts)
+
+An "Enrichment" process should be implemented in order to help resolving a Node, Interface, etc.
+This should be implemented at a higher level, to allow caching of some sort.
+Something like this should be possible
+
+[source, Java]
+----
+SimpleVertex v = new SimpleVertex();
+v.withNode(NodeRef.from(node));
+
+// ...
+
+v.withInterface(node.getIpInterfaces().get(0));
+----
+
+Afterwards when converting this to a GenericVertex, NodeInfo or IpInterface snippets are put onto the vertex.
+Another more general concept could look like this:
+
+[source, Java]
+----
+interface EnrichmentProvider<V extends Vertex, E extends Edge<V>> {
+   boolean contributesTo(String namespace);
+   void enrich(V vertex);
+   void enrich(E edge);
+}
+----
+
+A NodeEnrichmentProvider could then enrich vertices or edges with node information if a `nodeRef` attribute is defined,
+resolving either by node id or location:foreignSource:foreignId.
+
+=== UI
+
+In the original topology implementation, vertices and eges contain ui information, such as tooltip or icons, etc.
+However this should be implemented in the ui layer itself, e.g. a renderer for each namespace/vertex/edge.
+Meaning, each vertex or edge should contain enough information to visualize it accordingly.
