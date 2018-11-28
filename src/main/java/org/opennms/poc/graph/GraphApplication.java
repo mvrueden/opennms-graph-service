@@ -17,6 +17,7 @@ import org.opennms.poc.graph.impl.DefaultGraphService;
 import org.opennms.poc.graph.impl.GraphmlProvider;
 import org.opennms.poc.graph.impl.PartialGraphProvider;
 import org.opennms.poc.graph.impl.bsm.BsmGraphProvider;
+import org.opennms.poc.graph.impl.nodes.NodeGraphProvider;
 import org.opennms.poc.graph.impl.vmware.VmwareGraphProvider;
 import org.opennms.poc.graph.impl.vmware.VmwareImporter;
 import org.slf4j.Logger;
@@ -47,12 +48,16 @@ public class GraphApplication {
 	@Autowired
 	private BsmGraphProvider bsmGraphProvider;
 
+	@Autowired
+	private NodeGraphProvider nodeGraphProvider;
+
 	@Scheduled(initialDelay = 5000, fixedDelay = 60 * 1000 * 60 * 24)
 	public void initializeGraphProvider() throws InvalidGraphException {
 		graphService.onBind(new GraphmlProvider(getClass().getResourceAsStream("/graphml-graph.xml")), new HashMap());
 		graphService.onBind((GraphProvider) new PartialGraphProvider(NAMESPACE), new HashMap<>());
 		graphService.onBind(new VmwareGraphProvider(), new HashMap());
 		graphService.onBind(bsmGraphProvider, new HashMap());
+		graphService.onBind(nodeGraphProvider, new HashMap<>());
 //		graphService.onBind(event -> {
 //			LOG.info("New event of type {} received.", event.getType());
 ////			final Graph g = graphService.getGraph(NAMESPACE);
@@ -92,7 +97,7 @@ public class GraphApplication {
 	@Scheduled(initialDelay = 5000, fixedDelay = 60 * 1000 * 10)
 	public void startDiscovery() throws MalformedURLException, RemoteException {
 		final EventBus eventBus = graphService.getEventBus();
-		new VmwareImporter(eventBus, "192.168.31.200", "???", "???").startImport();
+		new VmwareImporter(eventBus, "192.168.31.200", "opennms@vsphere.local", "Pittsb0r0!").startImport();
 	}
 
 	private Vertex createVertex(int id) {

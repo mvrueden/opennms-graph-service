@@ -28,7 +28,13 @@
 
 package org.opennms.poc.graph.impl.refs;
 
+import static org.opennms.poc.graph.impl.refs.NodeIdRef.createInfo;
+
 import java.util.Objects;
+
+import org.opennms.netmgt.dao.api.NodeDao;
+import org.opennms.netmgt.model.OnmsNode;
+import org.opennms.poc.graph.api.info.NodeInfo;
 
 public class ForeignIdForeignSourceRef implements NodeRef {
 
@@ -52,5 +58,13 @@ public class ForeignIdForeignSourceRef implements NodeRef {
     @Override
     public int hashCode() {
         return Objects.hash(foreignSource, foreignId);
+    }
+
+    @Override
+    public NodeInfo resolve(NodeDao nodeDao) {
+        // TODO MVR what happens if node is not there anymore?
+        final OnmsNode node = nodeDao.findByForeignId(foreignSource, foreignId);
+        final NodeInfo nodeInfo = createInfo(node);
+        return nodeInfo;
     }
 }

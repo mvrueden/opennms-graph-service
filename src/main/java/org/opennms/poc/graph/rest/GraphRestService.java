@@ -28,6 +28,7 @@
 
 package org.opennms.poc.graph.rest;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,6 +39,7 @@ import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.enrichment.VertexEnrichmentProcessor;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,9 @@ public class GraphRestService {
 
     @Autowired
     private GraphService graphService;
+
+    @Autowired
+    private List<VertexEnrichmentProcessor> enrichmentProcessors;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<String> listNamespaces() {
@@ -78,7 +83,16 @@ public class GraphRestService {
         });
         graph.getVertices().stream().forEach(vertex -> {
             final GenericVertex genericVertex = vertex.asGenericVertex();
-            verticesArray.add(genericVertex.getProperties());
+            enrichmentProcessors.forEach(p -> {
+                if (p.canEnrich(genericVertex.getNamespace())) {
+                    p.enrich(genericVertex);
+                }
+            });
+
+            final Map<String, Object> properties = new HashMap<>();
+            properties.putAll(genericVertex.getProperties());
+            properties.putAll(genericVertex.getComputedProperties());
+            verticesArray.add(properties);
         });
         return jsonGraph;
     }

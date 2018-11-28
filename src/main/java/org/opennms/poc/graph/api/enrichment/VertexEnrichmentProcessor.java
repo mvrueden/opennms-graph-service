@@ -26,13 +26,11 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl.refs;
+package org.opennms.poc.graph.api.enrichment;
 
-import org.opennms.netmgt.dao.api.NodeDao;
-import org.opennms.poc.graph.api.info.NodeInfo;
+import org.opennms.poc.graph.api.generic.GenericVertex;
 
-// Reference to a node
-public interface NodeRef {
-
-    NodeInfo resolve(NodeDao nodeDao);
+public interface VertexEnrichmentProcessor {
+    boolean canEnrich(String namespace);
+    void enrich(GenericVertex vertex);
 }

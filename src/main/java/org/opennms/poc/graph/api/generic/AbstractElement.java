@@ -35,6 +35,8 @@ public class AbstractElement {
 
     protected final Map<String, Object> properties = new HashMap<>();
 
+    protected final Map<String, Object> computedProperties = new HashMap<>();
+
     public AbstractElement() {
 
     }
@@ -59,6 +61,14 @@ public class AbstractElement {
     public void setProperties(Map<String, Object> properties) {
         this.properties.clear();
         this.properties.putAll(properties);
+    }
+
+    public void setComputedProperty(String key, Object value) {
+        computedProperties.put(key, value);
+    }
+
+    public Map<String, Object> getComputedProperties() {
+        return computedProperties;
     }
 
     public Map<String, Object> getProperties() {

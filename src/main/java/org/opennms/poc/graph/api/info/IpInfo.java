@@ -26,13 +26,16 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl.refs;
+package org.opennms.poc.graph.api.info;
 
-import org.opennms.netmgt.dao.api.NodeDao;
-import org.opennms.poc.graph.api.info.NodeInfo;
+public class IpInfo {
+    private String ipAddress;
 
-// Reference to a node
-public interface NodeRef {
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
 
-    NodeInfo resolve(NodeDao nodeDao);
+    public String getIpAddress() {
+        return ipAddress;
+    }
 }

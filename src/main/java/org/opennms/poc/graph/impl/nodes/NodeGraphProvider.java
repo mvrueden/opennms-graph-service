@@ -26,13 +26,43 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl.refs;
+package org.opennms.poc.graph.impl.nodes;
 
 import org.opennms.netmgt.dao.api.NodeDao;
-import org.opennms.poc.graph.api.info.NodeInfo;
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphProvider;
+import org.opennms.poc.graph.api.generic.GenericGraph;
+import org.opennms.poc.graph.api.generic.GenericProperties;
+import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-// Reference to a node
-public interface NodeRef {
+// Dummy GraphProvider, which shows all nodes. Required to simulate Node Enrichment
+@Component
+public class NodeGraphProvider implements GraphProvider {
 
-    NodeInfo resolve(NodeDao nodeDao);
+    @Autowired
+    private NodeDao nodeDao;
+
+    @Override
+    public String getNamespace() {
+        return "nodes";
+    }
+
+    @Override
+    public Graph getGraph() {
+        final GenericGraph graph = new GenericGraph();
+        graph.setNamespace(getNamespace());
+
+        nodeDao.findAll().forEach(n -> {
+            final GenericVertex v = new GenericVertex();
+            v.setProperty(GenericProperties.NODE_ID, n.getId());
+            v.setNamespace(getNamespace());
+            v.setId("" + n.getId());
+
+            graph.addVertex(v);
+        });
+
+        return graph;
+    }
 }

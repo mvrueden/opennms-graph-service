@@ -33,6 +33,7 @@ public interface GenericProperties {
     String ID = "id";
     String DESCRIPTION = "description";
     String NAMESPACE = "namespace";
+    @Deprecated
     String ICON_KEY = "iconKey";
     String IP_ADDRESS = "ipAddr";
     String LABEL = "label";
@@ -40,8 +41,11 @@ public interface GenericProperties {
     String NODE_ID = "nodeID";
     String FOREIGN_SOURCE = "foreignSource";
     String FOREIGN_ID = "foreignID";
+    @Deprecated
     String SELECTED = "selected";
+    @Deprecated
     String STYLE_NAME = "styleName";
+    @Deprecated
     String TOOLTIP = "tooltip";
     String X = "x";
     String Y = "y";
@@ -53,4 +57,7 @@ public interface GenericProperties {
     String LEVEL = "level";
     String EDGE_PATH_OFFSET = "edge-path-offset";
     String BREADCRUMB_STRATEGY = "breadcrumb-strategy";
+
+    // Reference to a node, either the id, or a <foreignSource>:<foreignId> statement
+    String NODE_REF = "nodeRef";
 }
