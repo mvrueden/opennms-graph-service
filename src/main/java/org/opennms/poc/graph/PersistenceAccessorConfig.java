@@ -26,12 +26,23 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.springframework.context.annotation.Configuration;
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+@Configuration
+public class PersistenceAccessorConfig {
 
-    void provideGraph(GraphRepository repository);
-
+//    @Autowired
+//    private DataSource dataSource;
+//
+//    public SessionFactory createSessionFactory() {
+//
+//    }
+//
+//    @Bean(name="graph-persistence-accessor")
+//    public GenericPersistenceAccessor createPersistenceAccessor() {
+//        GenericHibernateAccessor accessor = new GenericHibernateAccessor();
+//        accessor.setSessionFactory(sessionFactory);
+//    }
 }

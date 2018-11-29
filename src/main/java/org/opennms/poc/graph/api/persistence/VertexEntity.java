@@ -26,12 +26,44 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.persistence;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-    void provideGraph(GraphRepository repository);
+@Entity
+@Table(name="vertices")
+public class VertexEntity {
 
+    @Id
+    @GeneratedValue(strategy= GenerationType.AUTO)
+    private Long id;
+
+    @Column
+    @ElementCollection(targetClass = Property.class)
+    private List<Property> properties = new ArrayList<>();
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public List<Property> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(List<Property> properties) {
+        this.properties = properties;
+    }
 }

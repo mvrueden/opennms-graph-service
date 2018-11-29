@@ -26,12 +26,38 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.persistence;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+import java.util.concurrent.TimeUnit;
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+import org.opennms.poc.graph.api.GraphProvider;
 
-    void provideGraph(GraphRepository repository);
+public interface PersistenceStrategy {
+
+    // TODO MVR das geht so nicht...
+    MemoryPersistenceStrategy Memory = new MemoryPersistenceStrategy();
+
+    // TODO MVR das geht so nicht...
+    HibernatePersistenceStrategy Hibernate = new HibernatePersistenceStrategy();
+
+    class MemoryPersistenceStrategy implements PersistenceStrategy {
+
+        private Long evictAfterMs;
+        private GraphProvider reloadHook;
+
+        public MemoryPersistenceStrategy evictAfter(int ms, TimeUnit timeUnit) {
+            evictAfterMs = timeUnit.toMillis(ms);
+            return this;
+        }
+
+        public MemoryPersistenceStrategy reloadHook(GraphProvider provider) {
+            this.reloadHook = provider;
+            return this;
+        }
+    }
+
+    class HibernatePersistenceStrategy implements PersistenceStrategy {
+
+    }
 
 }

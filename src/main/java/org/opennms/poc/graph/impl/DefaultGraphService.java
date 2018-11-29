@@ -28,10 +28,8 @@
 
 package org.opennms.poc.graph.impl;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -41,8 +39,9 @@ import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.events.Event;
 import org.opennms.poc.graph.api.listener.GraphListener;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.common.eventbus.EventBus;
@@ -52,7 +51,10 @@ import com.google.common.eventbus.EventBus;
 public class DefaultGraphService implements GraphService {
 
     private EventBus eventBus = new EventBus();
-    private Map<String, GraphProvider> providers = new HashMap<>();
+//    private Map<String, GraphProvider> providers = new HashMap<>();
+
+    @Autowired
+    private GraphRepository graphRepository;
 
     public void onBind(GraphListener listener, Map properties) {
         eventBus.register(listener);
@@ -65,54 +67,32 @@ public class DefaultGraphService implements GraphService {
     // OSGi-Hook
     public void onBind(GraphProvider provider, Map properties) {
         Objects.requireNonNull(provider);
-
-        final String namespace = provider.getNamespace();
-        if (providers.containsKey(namespace)) {
-            throw new IllegalStateException("Provider for namespace [" + namespace + "] already registered");
-        }
-        providers.put(namespace, provider);
+        provider.provideGraph(graphRepository);
         eventBus.register(provider);
     }
 
     // OSGi-Hook
     public void onUnbind(GraphProvider provider, Map properties) {
-        final String namespace = provider.getNamespace();
-        providers.remove(namespace);
-        eventBus.unregister(provider);
+        // TODO MVR remove graph again
+//        providers.remove(namespace);
+//        eventBus.unregister(provider);
     }
-
-//    public void linkEvent(final LinkEvent event) {
-//        listeners.forEach(listener -> listener.linkEvent(event));
-//    }
 
     @Override
     public List<Graph<? extends Vertex, ? extends Edge<? extends Vertex>>> getGraphs() {
-        return providers.values()
+        return graphRepository.findAll()
                 .stream()
-                .map(p -> (Graph<Vertex, Edge<Vertex>>) p.getGraph())
+                .map(p -> graphRepository.findByNamespace(p.getNamespace()))
                 .collect(Collectors.toList());
     }
 
     @Override
     public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace) {
-        final GraphProvider graphProvider = providers.get(namespace);
-        if (graphProvider == null) {
-            throw new NoSuchElementException("There is no graph provider registered for namespace [" + namespace + "]");
-        }
-        return graphProvider.getGraph();
+        return (Graph<V, E>) graphRepository.findByNamespace(namespace);
     }
 
     @Override
-    public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(Query query) {
+    public <V extends Vertex, E extends Edge<V>> Graph<V, E> getSnapshot(Query query) {
         throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public <EVENT extends Event> void dispatchEvent(EVENT event) {
-        eventBus.post(event);
-    }
-
-    public EventBus getEventBus() {
-        return eventBus;
     }
 }

@@ -31,6 +31,7 @@ package org.opennms.poc.graph.api;
 import java.util.List;
 
 import org.opennms.poc.graph.api.generic.GenericGraph;
+import org.opennms.poc.graph.api.info.GraphInfo;
 
 public interface Graph<V extends Vertex, E extends Edge<V>> {
     List<V> getVertices();
@@ -50,4 +51,6 @@ public interface Graph<V extends Vertex, E extends Edge<V>> {
 
     // TODO MVR make this more generic...
     V getVertex(String id);
+
+    GraphInfo getInfo();
 }

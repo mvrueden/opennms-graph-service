@@ -31,15 +31,10 @@ package org.opennms.poc.graph.impl.vmware;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.builder.GraphBuilder;
-import org.opennms.poc.graph.api.events.AddEdgeEvent;
-import org.opennms.poc.graph.api.events.AddVertexEvent;
-import org.opennms.poc.graph.api.events.GraphDiscoveryFinishedEvent;
-import org.opennms.poc.graph.api.events.GraphDiscoveryStartedEvent;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.eventbus.Subscribe;
 
 public class VmwareGraphProvider implements GraphProvider<VmwareVertex, VmwareEdge> {
 
@@ -52,38 +47,43 @@ public class VmwareGraphProvider implements GraphProvider<VmwareVertex, VmwareEd
         this.graphBuilder = new GraphBuilder<>(VmwareImporter.NAMESPACE, graphDiscoveryStartedEvent -> new SimpleGraph<>(VmwareImporter.NAMESPACE));
     }
 
-    @Override
+//    @Override
     public String getNamespace() {
         return VmwareImporter.NAMESPACE;
     }
 
-    @Override
+//    @Override
     public Graph<VmwareVertex, VmwareEdge> getGraph() {
         return graph;
     }
 
-    @Subscribe
-    public void handleGraphCreationStarted(GraphDiscoveryStartedEvent event) {
-        LOG.info("Graph Creation started");
-        graphBuilder.handleGraphCreationStarted(event);
+    @Override
+    public void provideGraph(GraphRepository repository) {
+
     }
 
-    @Subscribe
-    public void handleGraphCreationFinished(GraphDiscoveryFinishedEvent event) {
-        LOG.info("Graph Creation finished");
-        graphBuilder.handleGraphCreationFinished(event);
-        this.graph = graphBuilder.getGraph();
-    }
-
-    @Subscribe
-    public void handleVertexAdded(AddVertexEvent<VmwareVertex> event) {
-        LOG.info("Vertex added");
-        graphBuilder.handleVertexAdded(event);
-    }
-
-    @Subscribe
-    public void handleEdgeAdded(AddEdgeEvent<VmwareVertex, VmwareEdge> event) {
-        LOG.info("Edge added");
-        graphBuilder.handleEdgeAdded(event);
-    }
+//    @Subscribe
+//    public void handleGraphCreationStarted(GraphDiscoveryStartedEvent event) {
+//        LOG.info("Graph Creation started");
+//        graphBuilder.handleGraphCreationStarted(event);
+//    }
+//
+//    @Subscribe
+//    public void handleGraphCreationFinished(GraphDiscoveryFinishedEvent event) {
+//        LOG.info("Graph Creation finished");
+//        graphBuilder.handleGraphCreationFinished(event);
+//        this.graph = graphBuilder.getGraph();
+//    }
+//
+//    @Subscribe
+//    public void handleVertexAdded(AddVertexEvent<VmwareVertex> event) {
+//        LOG.info("Vertex added");
+//        graphBuilder.handleVertexAdded(event);
+//    }
+//
+//    @Subscribe
+//    public void handleEdgeAdded(AddEdgeEvent<VmwareVertex, VmwareEdge> event) {
+//        LOG.info("Edge added");
+//        graphBuilder.handleEdgeAdded(event);
+//    }
 }

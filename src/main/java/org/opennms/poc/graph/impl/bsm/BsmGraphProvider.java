@@ -28,12 +28,16 @@
 
 package org.opennms.poc.graph.impl.bsm;
 
+import java.util.concurrent.TimeUnit;
+
 import org.opennms.netmgt.bsm.service.BusinessServiceManager;
 import org.opennms.netmgt.bsm.service.model.graph.BusinessServiceGraph;
 import org.opennms.netmgt.bsm.service.model.graph.GraphEdge;
 import org.opennms.netmgt.bsm.service.model.graph.GraphVertex;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -54,20 +58,20 @@ public class BsmGraphProvider implements GraphProvider {
         serviceManager.getStateMachine().setBusinessServices(serviceManager.getAllBusinessServices());
     }
 
-    @Override
-    public String getNamespace() {
-        return NAMESPACE;
-    }
-
-    @Override
-    public Graph getGraph() {
-        final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
-        final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
-        for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
-            addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
-        }
-        return targetGraph;
-    }
+//    @Override
+//    public String getNamespace() {
+//        return NAMESPACE;
+//    }
+//
+//    @Override
+//    public Graph getGraph() {
+//        final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
+//        final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
+//        for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
+//            addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
+//        }
+//        return targetGraph;
+//    }
 
     private void addVertex(BusinessServiceGraph sourceGraph, Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>>  targetGraph, GraphVertex sourceVertex, AbstractVertex targetVertex) {
         if (targetVertex == null) {
@@ -108,5 +112,15 @@ public class BsmGraphProvider implements GraphProvider {
             return new ReductionKeyVertex(graphVertex);
         }
         throw new IllegalArgumentException("Cannot convert GraphVertex to BusinessServiceVertex: " + graphVertex);
+    }
+
+    @Override
+    public void provideGraph(GraphRepository repository) {
+        final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
+        final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
+        for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
+            addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
+        }
+        repository.save(targetGraph, PersistenceStrategy.Memory.evictAfter(10, TimeUnit.SECONDS).reloadHook(this));
     }
 }

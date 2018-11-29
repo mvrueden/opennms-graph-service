@@ -26,12 +26,23 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.persistence;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+import java.util.List;
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.info.GraphInfo;
 
-    void provideGraph(GraphRepository repository);
+public interface GraphRepository {
+
+    <V extends Vertex, E extends Edge<V>, G extends Graph<V, E>> void save(G graph);
+
+    <V extends Vertex, E extends Edge<V>, G extends Graph<V, E>, P extends PersistenceStrategy> void save(G graph, P persistenceStrategy);
+
+    Graph<Vertex, Edge<Vertex>> findByNamespace(String namespace);
+
+    List<GraphInfo> findAll();
 
 }

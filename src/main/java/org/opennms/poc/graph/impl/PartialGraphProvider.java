@@ -28,18 +28,16 @@
 
 package org.opennms.poc.graph.impl;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Edge;
-import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.generic.GenericEdge;
-import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.listener.EventType;
 import org.opennms.poc.graph.api.listener.GraphListener;
 import org.opennms.poc.graph.api.listener.LinkEvent;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
 
 import com.google.common.eventbus.Subscribe;
 
@@ -56,19 +54,19 @@ public class PartialGraphProvider implements GraphProvider<GenericVertex, Generi
         this.namespace = Objects.requireNonNull(namespace);
     }
 
-    @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    @Override
-    public Graph<GenericVertex, GenericEdge> getGraph() {
-        final GenericGraph graph = new GenericGraph();
-        graph.setNamespace(namespace);
-        graph.addVertices(new ArrayList<>(this.graph.getVertices()));
-        graph.addEdges(new ArrayList<>(this.graph.getEdges()));
-        return graph;
-    }
+//    @Override
+//    public String getNamespace() {
+//        return namespace;
+//    }
+//
+//    @Override
+//    public Graph<GenericVertex, GenericEdge> getGraph() {
+//        final GenericGraph graph = new GenericGraph();
+//        graph.setNamespace(namespace);
+//        graph.addVertices(new ArrayList<>(this.graph.getVertices()));
+//        graph.addEdges(new ArrayList<>(this.graph.getEdges()));
+//        return graph;
+//    }
 
     @Subscribe
     public void linkEvent(LinkEvent event) {
@@ -105,4 +103,8 @@ public class PartialGraphProvider implements GraphProvider<GenericVertex, Generi
         }
     }
 
+    @Override
+    public void provideGraph(GraphRepository repository) {
+        // TODO MVR ...
+    }
 }

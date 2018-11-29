@@ -26,12 +26,51 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.persistence;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+// TODO MVR additional properties
+@Entity
+@Table(name="edges")
+public class EdgeEntity {
 
-    void provideGraph(GraphRepository repository);
+    @Id
+    @GeneratedValue(strategy= GenerationType.AUTO)
+    private Long id;
 
+    @ManyToOne
+    private VertexEntity source;
+
+    @ManyToOne
+    private VertexEntity target;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public VertexEntity getSource() {
+        return source;
+    }
+
+    public void setSource(VertexEntity source) {
+        this.source = source;
+    }
+
+    public VertexEntity getTarget() {
+        return target;
+    }
+
+    public void setTarget(VertexEntity target) {
+        this.target = target;
+    }
 }

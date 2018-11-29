@@ -33,6 +33,7 @@ import java.util.Objects;
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Vertex;
 
+// TODO MVR the edge does not have a namespace
 public class GenericEdge extends AbstractElement implements Edge<GenericVertex> {
     private final GenericVertex source;
     private final GenericVertex target;
@@ -46,6 +47,8 @@ public class GenericEdge extends AbstractElement implements Edge<GenericVertex> 
     public GenericEdge(GenericVertex source, GenericVertex target) {
         this.source = source;
         this.target = target;
+        this.setNamespace(source.getNamespace());
+        this.setId(source.getNamespace()  + "/" + source.getId() + ":" + target.getNamespace() + "/" + target.getId());
     }
 
     @Override

@@ -41,6 +41,8 @@ import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
 
 public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge> {
 
@@ -53,7 +55,15 @@ public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge
         // TODO MVR NPE...
         final GraphMLGraph graphMLGraph = graphML.getGraphs().get(1);
         final Graph<GenericVertex, GenericEdge> graph = new GenericGraph(graphMLGraph.getProperties());
-        final List<GenericVertex> vertices = graphMLGraph.getNodes().stream().map(n -> new GenericVertex(n.getProperties())).collect(Collectors.toList());
+        final List<GenericVertex> vertices = graphMLGraph.getNodes()
+                .stream().map(n -> {
+                    // In case of GraphML each vertex does not have a namespace, but it is inherited from the graph
+                    // Therefore here we have to manually set it
+                    final GenericVertex v = new GenericVertex(n.getProperties());
+                    v.setNamespace(graph.getNamespace());
+                    return v;
+                })
+                .collect(Collectors.toList());
         graph.addVertices(vertices);
 
         final List<GenericEdge> edges = graphMLGraph.getEdges().stream().map(e -> {
@@ -61,19 +71,28 @@ public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge
                     final GenericVertex target = graph.getVertex(e.getTarget().getId());
                     final GenericEdge edge = new GenericEdge(source, target);
                     edge.setProperties(e.getProperties());
+
+                    // In case of GraphML each edge does not have a namespace, but it is inherited from the graph
+                    // Therefore here we have to manually set it
+                    edge.setNamespace(graph.getNamespace());
                     return edge;
                 }).collect(Collectors.toList());
         graph.addEdges(edges);
         this.graph = graph;
     }
 
-    @Override
-    public String getNamespace() {
-        return graph.getNamespace();
-    }
+//    @Override
+//    public String getNamespace() {
+//        return graph.getNamespace();
+//    }
+//
+//    @Override
+//    public Graph getGraph() {
+//        return graph;
+//    }
 
     @Override
-    public Graph getGraph() {
-        return graph;
+    public void provideGraph(GraphRepository repository) {
+        repository.save(graph, PersistenceStrategy.Hibernate);
     }
 }

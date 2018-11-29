@@ -31,13 +31,13 @@ package org.opennms.poc.graph.api.simple;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericGraph;
+import org.opennms.poc.graph.api.info.GraphInfo;
 
 import com.google.common.collect.Lists;
 
@@ -72,7 +72,9 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
 
     @Override
     public void addEdges(List<E> edges) {
-        this.edges.addAll(edges);
+        for (E eachEdge : edges) {
+            addEdge(eachEdge);
+        }
     }
 
     @Override
@@ -89,17 +91,31 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     @Override
     public void addEdge(E edge) {
         Objects.requireNonNull(edge);
-        addEdges(Lists.newArrayList(edge));
+        if (edge.getSource().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getSource().getId()) == null) {
+            addVertex(edge.getSource());
+        }
+        if (edge.getTarget().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getTarget().getId()) == null) {
+            addVertex(edge.getTarget());
+        }
+        this.edges.add(edge);
     }
 
     @Override
     public V getVertex(String id) {
-        return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElseThrow(() -> new NoSuchElementException("No vertex available with id [" + id + "]"));
+        return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElse(null);
+    }
+
+    @Override
+    public GraphInfo getInfo() {
+        final GraphInfo info = new GraphInfo();
+        info.setNamespace(getNamespace());
+        return info;
     }
 
     @Override
     public GenericGraph asGenericGraph() {
         final GenericGraph graph = new GenericGraph();
+        graph.setProperty("info", getInfo());
         graph.setNamespace(getNamespace());
         getVertices().stream().map(Vertex::asGenericVertex).forEach(graph::addVertex);
         getEdges().stream().map(Edge::asGenericEdge).forEach(graph::addEdge);

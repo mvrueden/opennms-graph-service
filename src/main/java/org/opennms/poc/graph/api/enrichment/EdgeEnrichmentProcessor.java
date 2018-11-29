@@ -26,12 +26,11 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.enrichment;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.opennms.poc.graph.api.generic.GenericEdge;
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
-
-    void provideGraph(GraphRepository repository);
-
+public interface EdgeEnrichmentProcessor {
+    boolean canEnrich(String namespace);
+    void enrich(GenericEdge vertex);
 }

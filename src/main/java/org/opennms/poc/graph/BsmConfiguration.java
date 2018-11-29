@@ -50,9 +50,11 @@ import org.opennms.netmgt.bsm.service.internal.BusinessServiceManagerImpl;
 import org.opennms.netmgt.bsm.service.internal.DefaultBusinessServiceStateMachine;
 import org.opennms.netmgt.config.DatabaseSchemaConfigFactory;
 import org.opennms.netmgt.dao.api.AlarmDao;
+import org.opennms.netmgt.dao.api.GenericPersistenceAccessor;
 import org.opennms.netmgt.dao.api.MonitoredServiceDao;
 import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.netmgt.dao.hibernate.AlarmDaoHibernate;
+import org.opennms.netmgt.dao.hibernate.GenericHibernateAccessor;
 import org.opennms.netmgt.dao.hibernate.MonitoredServiceDaoHibernate;
 import org.opennms.netmgt.dao.hibernate.NodeDaoHibernate;
 import org.opennms.netmgt.dao.mock.MockEventIpcManager;
@@ -144,6 +146,13 @@ public class BsmConfiguration {
     }
 
     @Bean
+    public GenericPersistenceAccessor createPersistenceAccessor(SessionFactory sessionFactory) {
+        final GenericHibernateAccessor accessor = new GenericHibernateAccessor();
+        accessor.setSessionFactory(sessionFactory);
+        return accessor;
+    }
+
+    @Bean
     public EventIpcManager createEventIpcManager() {
         return new MockEventIpcManager();
     }
@@ -154,7 +163,8 @@ public class BsmConfiguration {
                 "org.opennms.netmgt.model",
                 "org.opennms.netmgt.dao.hibernate",
                 "org.opennms.netmgt.dao.model",
-                "org.opennms.netmgt.bsm.persistence.api"
+                "org.opennms.netmgt.bsm.persistence.api",
+                "org.opennms.poc.graph",
         };
         final AnnotationSessionFactoryBean sessionFactoryBean = new AnnotationSessionFactoryBean();
         sessionFactoryBean.setDataSource(dataSource);

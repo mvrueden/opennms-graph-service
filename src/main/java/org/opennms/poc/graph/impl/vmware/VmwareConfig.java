@@ -26,12 +26,12 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.impl.vmware;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+public class VmwareConfig {
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
 
-    void provideGraph(GraphRepository repository);
-
+    public static final String Host = "localhost";
+    public static final String Username = "admin";
+    public static final String Password = "admin";
 }

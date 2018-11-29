@@ -33,15 +33,14 @@ import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeSet;
 
-import org.opennms.poc.graph.api.events.AddEdgeEvent;
-import org.opennms.poc.graph.api.events.AddVertexEvent;
-import org.opennms.poc.graph.api.events.GraphDiscoveryFinishedEvent;
-import org.opennms.poc.graph.api.events.GraphDiscoveryStartedEvent;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
+import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.opennms.protocols.vmware.VmwareViJavaAccess;
 
-import com.google.common.eventbus.EventBus;
 import com.vmware.vim25.HostRuntimeInfo;
 import com.vmware.vim25.HostSystemPowerState;
 import com.vmware.vim25.VirtualMachinePowerState;
@@ -58,29 +57,30 @@ public class VmwareImporter {
     private final String username;
     private final String hostname;
     private final String password;
-    private final EventBus eventBus;
+    private final SimpleGraph<VmwareVertex, VmwareEdge> graph = new SimpleGraph<>(NAMESPACE);
 
     // Vmware Host Name -> Vertex
     private final Map<String, HostSystemVertex> hostSystemVertexMap = new HashMap<>();
+    private final GraphRepository graphRepository;
 
-    public VmwareImporter(EventBus eventBus, String hostname, String username, String password) {
+    public VmwareImporter(GraphRepository graphRepository, String hostname, String username, String password) {
         this.hostname = hostname;
         this.username = username;
         this.password = password;
-        this.eventBus = eventBus;
+        this.graphRepository = Objects.requireNonNull(graphRepository);
     }
 
     public void startImport() throws RemoteException, MalformedURLException {
         final VmwareViJavaAccess vmwareViJavaAccess = new VmwareViJavaAccess(hostname, username, password);
-        vmwareViJavaAccess.connect();
-        vmwareViJavaAccess.setTimeout(10 * 1000);
-
         try {
-            eventBus.post(new GraphDiscoveryStartedEvent(NAMESPACE)); // TODO MVR allow setting additional properties, e.g. api version etc.
+            vmwareViJavaAccess.connect();
+            vmwareViJavaAccess.setTimeout(10 * 1000);
+//            eventBus.post(new GraphDiscoveryStartedEvent(NAMESPACE)); // TODO MVR allow setting additional properties, e.g. api version etc.
             iterateHostSystems(vmwareViJavaAccess);
             iterateVirtualMachines(vmwareViJavaAccess);
+            graphRepository.save(graph, PersistenceStrategy.Hibernate);
         } finally {
-            eventBus.post(new GraphDiscoveryFinishedEvent(NAMESPACE)); // TODO MVR send with errors or success maybe ?!
+//            eventBus.post(new GraphDiscoveryFinishedEvent(NAMESPACE)); // TODO MVR send with errors or success maybe ?!
             vmwareViJavaAccess.disconnect();
         }
 
@@ -137,7 +137,8 @@ public class VmwareImporter {
                                 // TODO MVR network vertex
                                 final VmwareVertex networkVertex = new VmwareVertex(network.getMOR().getVal());
                                 final VmwareEdge edge = new VmwareEdge(hostSystemVertex, networkVertex);
-                                eventBus.post(new AddEdgeEvent<>(edge));
+                                graph.addEdge(edge);
+//                                eventBus.post(new AddEdgeEvent<>(edge));
                             }
                         } catch (RemoteException re) {
                             // TODO MVR
@@ -147,12 +148,14 @@ public class VmwareImporter {
                             for (Datastore datastore : hostSystem.getDatastores()) {
                                 final VmwareVertex datastoreVertex = new VmwareVertex(datastore.getMOR().getVal());
                                 final VmwareEdge edge = new VmwareEdge(hostSystemVertex, datastoreVertex);
-                                eventBus.post(new AddEdgeEvent<>(edge));
+                                graph.addEdge(edge);
+//                                eventBus.post(new AddEdgeEvent<>(edge));
                             }
                         } catch (RemoteException re) {
                             // TODO MVR
                         }
-                        eventBus.post(new AddVertexEvent<>(hostSystemVertex));
+                        graph.addVertex(hostSystemVertex);
+//                        eventBus.post(new AddVertexEvent<>(hostSystemVertex));
                     });
         }
     }
@@ -180,7 +183,8 @@ public class VmwareImporter {
                         }
 
                         final VmwareEdge edge = new VmwareEdge(hostSystemVertexMap.get(virtualMachine.getRuntime().getHost().getVal()), virtualMachineVertex);
-                        eventBus.post(new AddEdgeEvent<>(edge));
+                        graph.addEdge(edge);
+//                        eventBus.post(new AddEdgeEvent<>(edge));
                     });
         }
     }

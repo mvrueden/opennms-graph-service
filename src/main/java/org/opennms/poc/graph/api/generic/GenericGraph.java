@@ -32,10 +32,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.info.GraphInfo;
 
 import com.google.common.collect.Lists;
 
@@ -63,12 +63,23 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
 
     @Override
     public GenericVertex getVertex(String id) {
-        return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElseThrow(() -> new NoSuchElementException("No vertex available with id [" + id + "]"));
+        return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElse(null);
+    }
+
+    @Override
+    public GraphInfo getInfo() {
+        final GraphInfo info = new GraphInfo();
+        info.setNamespace(getNamespace());
+        info.setDescription(getProperty(GenericProperties.DESCRIPTION));
+        info.setName(getProperty(GenericProperties.LABEL));
+        return info;
     }
 
     @Override
     public void addEdges(List<GenericEdge> edges) {
-        this.edges.addAll(edges); // TODO MVR verify only add if not already added
+        for (GenericEdge eachEdge : edges) {
+            addEdge(eachEdge);
+        }
     }
 
     @Override
@@ -85,7 +96,13 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     @Override
     public void addEdge(GenericEdge edge) {
         Objects.requireNonNull(edge);
-        addEdges(Lists.newArrayList(edge));
+        if (edge.getSource().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getSource().getId()) == null) {
+            addVertex(edge.getSource());
+        }
+        if (edge.getTarget().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getTarget().getId()) == null) {
+            addVertex(edge.getTarget());
+        }
+        this.edges.add(edge);
     }
 
     @Override
