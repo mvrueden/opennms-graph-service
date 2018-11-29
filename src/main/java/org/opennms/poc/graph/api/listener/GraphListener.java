@@ -28,6 +28,15 @@
 
 package org.opennms.poc.graph.api.listener;
 
-public interface GraphListener {
+import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Vertex;
 
+public interface GraphListener {
+    void handleGraphChangeStartEvent(GraphChangeStartedEvent startedEvent);
+    void handleGraphChangeEndEvent(GraphChangedFinishedEvent finishedEvent);
+
+//    void handleGraphSnapshotEvent(List<Graph> graphs);
+
+    void handleNewVertices(Vertex... vertices);
+    void handleNewEdges(Edge... edges);
 }

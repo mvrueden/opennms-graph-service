@@ -28,7 +28,6 @@
 
 package org.opennms.poc.graph.impl.vmware;
 
-import java.net.MalformedURLException;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,7 +35,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.opennms.poc.graph.api.GraphService;
+import org.opennms.poc.graph.api.listener.GraphChangeStartedEvent;
+import org.opennms.poc.graph.api.listener.GraphChangedFinishedEvent;
 import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.opennms.protocols.vmware.VmwareViJavaAccess;
@@ -61,26 +62,29 @@ public class VmwareImporter {
 
     // Vmware Host Name -> Vertex
     private final Map<String, HostSystemVertex> hostSystemVertexMap = new HashMap<>();
-    private final GraphRepository graphRepository;
+    private final GraphService graphService;
 
-    public VmwareImporter(GraphRepository graphRepository, String hostname, String username, String password) {
+    public VmwareImporter(GraphService graphService, String hostname, String username, String password) {
         this.hostname = hostname;
         this.username = username;
         this.password = password;
-        this.graphRepository = Objects.requireNonNull(graphRepository);
+        this.graphService = Objects.requireNonNull(graphService);
     }
 
-    public void startImport() throws RemoteException, MalformedURLException {
+    public void startImport() {
         final VmwareViJavaAccess vmwareViJavaAccess = new VmwareViJavaAccess(hostname, username, password);
         try {
             vmwareViJavaAccess.connect();
             vmwareViJavaAccess.setTimeout(10 * 1000);
-//            eventBus.post(new GraphDiscoveryStartedEvent(NAMESPACE)); // TODO MVR allow setting additional properties, e.g. api version etc.
+            graphService.sendGraphChangeStartedEvent(new GraphChangeStartedEvent(NAMESPACE));
             iterateHostSystems(vmwareViJavaAccess);
             iterateVirtualMachines(vmwareViJavaAccess);
-            graphRepository.save(graph, PersistenceStrategy.Hibernate);
+            graphService.getGraphRepository().save(graph, PersistenceStrategy.Hibernate);
+            graphService.sendGraphChangeFinishedEvent(new GraphChangedFinishedEvent(NAMESPACE));
+        } catch (Exception ex) {
+            graphService.sendGraphChangeFinishedEvent(new GraphChangedFinishedEvent(NAMESPACE, ex));
+            throw new RuntimeException(ex);
         } finally {
-//            eventBus.post(new GraphDiscoveryFinishedEvent(NAMESPACE)); // TODO MVR send with errors or success maybe ?!
             vmwareViJavaAccess.disconnect();
         }
 
@@ -137,8 +141,8 @@ public class VmwareImporter {
                                 // TODO MVR network vertex
                                 final VmwareVertex networkVertex = new VmwareVertex(network.getMOR().getVal());
                                 final VmwareEdge edge = new VmwareEdge(hostSystemVertex, networkVertex);
+                                graphService.sendEdgesAddedEvent(edge);
                                 graph.addEdge(edge);
-//                                eventBus.post(new AddEdgeEvent<>(edge));
                             }
                         } catch (RemoteException re) {
                             // TODO MVR
@@ -148,14 +152,14 @@ public class VmwareImporter {
                             for (Datastore datastore : hostSystem.getDatastores()) {
                                 final VmwareVertex datastoreVertex = new VmwareVertex(datastore.getMOR().getVal());
                                 final VmwareEdge edge = new VmwareEdge(hostSystemVertex, datastoreVertex);
+                                graphService.sendEdgesAddedEvent(edge);
                                 graph.addEdge(edge);
-//                                eventBus.post(new AddEdgeEvent<>(edge));
                             }
                         } catch (RemoteException re) {
                             // TODO MVR
                         }
                         graph.addVertex(hostSystemVertex);
-//                        eventBus.post(new AddVertexEvent<>(hostSystemVertex));
+                        graphService.sendVertexAddedEvent(hostSystemVertex);
                     });
         }
     }

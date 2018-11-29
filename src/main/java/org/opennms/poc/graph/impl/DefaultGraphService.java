@@ -28,6 +28,8 @@
 
 package org.opennms.poc.graph.impl;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,43 +41,76 @@ import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.listener.GraphChangeStartedEvent;
+import org.opennms.poc.graph.api.listener.GraphChangedFinishedEvent;
 import org.opennms.poc.graph.api.listener.GraphListener;
 import org.opennms.poc.graph.api.persistence.GraphRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.google.common.eventbus.EventBus;
+import com.google.common.collect.Lists;
 
 // How would this listen to events in the first place?
 @Service
 public class DefaultGraphService implements GraphService {
 
-    private EventBus eventBus = new EventBus();
-//    private Map<String, GraphProvider> providers = new HashMap<>();
+    private class Namespace {
+
+        private final String namespace;
+
+        public Namespace(String namespace) {
+            this.namespace = Objects.requireNonNull(namespace);
+        }
+
+        public boolean matches(String input) {
+            return namespace.equals("*") || namespace.equalsIgnoreCase(input);
+        }
+    }
+
+    private class GraphListenerEntity {
+        private Namespace namespace;
+        private GraphListener listener;
+    }
+
+    private class GraphProviderEntity {
+        private Namespace namespace;
+        private GraphProvider provider;
+    }
+
+    private List<GraphProviderEntity> providers = new ArrayList<>();
+
+    private List<GraphListenerEntity> listeners = new ArrayList<>();
 
     @Autowired
     private GraphRepository graphRepository;
 
     public void onBind(GraphListener listener, Map properties) {
-        eventBus.register(listener);
+        final GraphListenerEntity entity = new GraphListenerEntity();
+        entity.listener = listener;
+        entity.namespace = new Namespace((String) properties.getOrDefault("namespace", "*"));
+        listeners.add(entity);
     }
 
     public void onUnbind(GraphListener listener, Map properties) {
-        eventBus.unregister(listener);
+        listeners.removeAll(
+                listeners.stream().filter(e -> e.listener == listener).collect(Collectors.toList())
+        );
     }
 
     // OSGi-Hook
     public void onBind(GraphProvider provider, Map properties) {
-        Objects.requireNonNull(provider);
-        provider.provideGraph(graphRepository);
-        eventBus.register(provider);
+        final GraphProviderEntity entity = new GraphProviderEntity();
+        entity.provider = provider;
+        entity.namespace = new Namespace((String) properties.getOrDefault("namespace", "*"));
+        entity.provider.provideGraph(graphRepository);
+        providers.add(entity);
     }
 
     // OSGi-Hook
     public void onUnbind(GraphProvider provider, Map properties) {
-        // TODO MVR remove graph again
-//        providers.remove(namespace);
-//        eventBus.unregister(provider);
+        final List<GraphProviderEntity> removeMe = providers.stream().filter(e -> e.provider == provider).collect(Collectors.toList());
+        removeMe.forEach(e -> e.provider.shutdownHook(graphRepository));
+        removeMe.forEach(e -> providers.remove(e));
     }
 
     @Override
@@ -95,4 +130,51 @@ public class DefaultGraphService implements GraphService {
     public <V extends Vertex, E extends Edge<V>> Graph<V, E> getSnapshot(Query query) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
+
+    @Override
+    public void sendGraphChangeStartedEvent(GraphChangeStartedEvent event) {
+        getListeners(event.getNamespace()).forEach(listener -> listener.handleGraphChangeStartEvent(event));
+    }
+
+    @Override
+    public void sendGraphChangeFinishedEvent(GraphChangedFinishedEvent event) {
+        getListeners(event.getNamespace()).forEach(listener -> listener.handleGraphChangeEndEvent(event));
+    }
+
+    @Override
+    public void sendVertexAddedEvent(Vertex... vertices) {
+        final Map<String, List<Vertex>> collect = Arrays.asList(vertices).stream().collect(Collectors.toMap(v -> v.getNamespace(), v -> Lists.newArrayList(v), (vertices1, vertices2) -> {
+            final List<Vertex> list = new ArrayList<>(vertices1);
+            list.addAll(vertices2.stream().filter(v -> !vertices1.contains(v)).collect(Collectors.toList()));
+            return list;
+        }));
+        for (Map.Entry<String, List<Vertex>> eachEntry : collect.entrySet()) {
+            getListeners(eachEntry.getKey()).forEach(l -> l.handleNewVertices(eachEntry.getValue().toArray(new Vertex[eachEntry.getValue().size()])));
+        }
+    }
+
+    @Override
+    public void sendEdgesAddedEvent(Edge... edges) {
+        final Map<String, List<Edge>> collect = Arrays.asList(edges).stream().collect(Collectors.toMap(e -> e.getNamespace(), e -> Lists.newArrayList(e), (edges1, edges2) -> {
+            final List<Edge> list = new ArrayList<>(edges1);
+            list.addAll(edges2.stream().filter(v -> !edges1.contains(v)).collect(Collectors.toList()));
+            return list;
+        }));
+        for (Map.Entry<String, List<Edge>> eachEntry : collect.entrySet()) {
+            getListeners(eachEntry.getKey()).forEach(l -> l.handleNewEdges(eachEntry.getValue().toArray(new Edge[eachEntry.getValue().size()])));
+        }
+    }
+
+    @Override
+    public GraphRepository getGraphRepository() {
+        return graphRepository;
+    }
+
+    private List<GraphListener> getListeners(String namespace) {
+        return listeners.stream()
+                .filter(entity -> entity.namespace.matches(namespace))
+                .map(entity -> entity.listener)
+                .collect(Collectors.toList());
+    }
+
 }

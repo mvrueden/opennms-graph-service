@@ -58,21 +58,6 @@ public class BsmGraphProvider implements GraphProvider {
         serviceManager.getStateMachine().setBusinessServices(serviceManager.getAllBusinessServices());
     }
 
-//    @Override
-//    public String getNamespace() {
-//        return NAMESPACE;
-//    }
-//
-//    @Override
-//    public Graph getGraph() {
-//        final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
-//        final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
-//        for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
-//            addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
-//        }
-//        return targetGraph;
-//    }
-
     private void addVertex(BusinessServiceGraph sourceGraph, Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>>  targetGraph, GraphVertex sourceVertex, AbstractVertex targetVertex) {
         if (targetVertex == null) {
             // Create a topology vertex for the current vertex
@@ -122,5 +107,10 @@ public class BsmGraphProvider implements GraphProvider {
             addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
         }
         repository.save(targetGraph, PersistenceStrategy.Memory.evictAfter(10, TimeUnit.SECONDS).reloadHook(this));
+    }
+
+    @Override
+    public void shutdownHook(GraphRepository graphRepository) {
+
     }
 }

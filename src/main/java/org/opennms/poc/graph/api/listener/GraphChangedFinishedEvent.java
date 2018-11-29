@@ -26,20 +26,22 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.events;
+package org.opennms.poc.graph.api.listener;
 
-import org.opennms.poc.graph.api.Vertex;
+public class GraphChangedFinishedEvent extends AbstractEvent {
 
-public class AddVertexEvent<V extends Vertex> extends AbstractEvent {
+    private final boolean success;
 
-    private final V vertex;
-
-    public AddVertexEvent(V vertex) {
-        super(vertex.getNamespace());
-        this.vertex = vertex;
+    public GraphChangedFinishedEvent(String namespace, Exception ex) {
+        super(namespace);
+        this.success = ex == null;
     }
 
-    public V getVertex() {
-        return vertex;
+    public GraphChangedFinishedEvent(String namespace) {
+        this(namespace, null);
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 }

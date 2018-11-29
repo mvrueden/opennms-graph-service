@@ -47,6 +47,7 @@ public class SimpleEdge<V extends SimpleVertex> implements Edge<V> {
     public SimpleEdge(V source, V target) {
         this.source = Objects.requireNonNull(source);
         this.target = Objects.requireNonNull(target);
+        this.namespace = source.getNamespace();
     }
 
     @Override

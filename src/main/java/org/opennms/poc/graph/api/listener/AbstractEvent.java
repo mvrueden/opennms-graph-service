@@ -28,31 +28,16 @@
 
 package org.opennms.poc.graph.api.listener;
 
-import java.util.Objects;
+public abstract class AbstractEvent implements Event {
 
-import org.opennms.poc.graph.api.Edge;
-import org.opennms.poc.graph.api.events.Event;
+    private final String namespace;
 
-// Custom Event
-public class LinkEvent implements Event {
-    private final EventType type;
-    private final Edge link;
-
-    public LinkEvent(EventType type, Edge edge) {
-       this.type = Objects.requireNonNull(type);
-       this.link = Objects.requireNonNull(edge);
-    }
-
-    public EventType getType() {
-        return type;
-    }
-
-    public Edge getLink() {
-        return link;
+    public AbstractEvent(String namespace) {
+        this.namespace = namespace;
     }
 
     @Override
     public String getNamespace() {
-        return link.getNamespace();
+        return namespace;
     }
 }

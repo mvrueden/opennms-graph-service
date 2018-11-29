@@ -95,4 +95,9 @@ public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge
     public void provideGraph(GraphRepository repository) {
         repository.save(graph, PersistenceStrategy.Hibernate);
     }
+
+    @Override
+    public void shutdownHook(GraphRepository graphRepository) {
+
+    }
 }

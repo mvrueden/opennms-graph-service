@@ -34,4 +34,5 @@ public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
 
     void provideGraph(GraphRepository repository);
 
+    void shutdownHook(GraphRepository graphRepository);
 }

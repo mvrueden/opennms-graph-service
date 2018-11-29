@@ -5,17 +5,13 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 
 import org.opennms.features.graphml.model.InvalidGraphException;
-import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.persistence.GraphRepository;
 import org.opennms.poc.graph.impl.DefaultGraphService;
 import org.opennms.poc.graph.impl.GraphmlProvider;
-import org.opennms.poc.graph.impl.PartialGraphProvider;
 import org.opennms.poc.graph.impl.bsm.BsmGraphProvider;
 import org.opennms.poc.graph.impl.nodes.NodeGraphProvider;
 import org.opennms.poc.graph.impl.vmware.VmwareConfig;
-import org.opennms.poc.graph.impl.vmware.VmwareGraphProvider;
+import org.opennms.poc.graph.impl.vmware.VmwareGraphListener;
 import org.opennms.poc.graph.impl.vmware.VmwareImporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,14 +22,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import com.google.common.collect.ImmutableMap;
+
 @SpringBootApplication
 @EnableScheduling
 @EnableTransactionManagement
 public class GraphApplication {
 
 	private static Logger LOG = LoggerFactory.getLogger(GraphApplication.class);
-
-	private static final String NAMESPACE = "simple";
 
 	public static void main(String[] args) {
 		SpringApplication.run(GraphApplication.class, args);
@@ -54,8 +50,7 @@ public class GraphApplication {
 	@Scheduled(initialDelay = 5000, fixedDelay = 60 * 1000 * 60 * 24)
 	public void initializeGraphProvider() throws InvalidGraphException {
 		graphService.onBind(new GraphmlProvider(getClass().getResourceAsStream("/graphml-graph.xml")), new HashMap());
-		graphService.onBind((GraphProvider) new PartialGraphProvider(NAMESPACE), new HashMap<>());
-		graphService.onBind(new VmwareGraphProvider(), new HashMap());
+		graphService.onBind(new VmwareGraphListener(graphRepository),  ImmutableMap.of("namespace", VmwareImporter.NAMESPACE));
 		graphService.onBind(bsmGraphProvider, new HashMap());
 		graphService.onBind(nodeGraphProvider, new HashMap<>());
 //		graphService.onBind(event -> {
@@ -66,41 +61,9 @@ public class GraphApplication {
 //		}, new HashMap());
 	}
 
-//	@Scheduled(initialDelay = 7500, fixedDelay = 5000)
-//	public void newLink() {
-//		final Graph graph = graphService.getGraph(NAMESPACE);
-//
-//		// No edges, create 2 links
-//		if (graph.getVertices().isEmpty()) {
-//			final Vertex source = createVertex(1);
-//			final Vertex target = createVertex(2);
-//			final Edge edge = new GenericEdge(source, target);
-//			final LinkEvent event = new LinkEvent(EventType.LinkDiscovered, edge);
-//			graphService.dispatchEvent(event);
-//		} else if(graph.getVertices().size() <= 50) {
-//			int vertexCount = graph.getVertices().size();
-//			final Vertex source = graph.getVertex("" + (vertexCount - 1)); // get last vertex
-//			final Vertex target = createVertex(vertexCount); // Create new vertex
-//			final Edge edge = new GenericEdge(source, target); // Connect them
-//			final LinkEvent event = new LinkEvent(EventType.LinkDiscovered, edge);
-//			graphService.dispatchEvent(event);
-//		} else {
-//			int vertexCount = graph.getVertices().size();
-//			final Vertex target = graph.getVertex("" + (vertexCount - 1)); // get last vertex
-//			final Vertex source = graph.getVertex("" + (vertexCount - 2)); // get last vertex
-//			final Edge edge = new GenericEdge(source, target); // Connect them
-//			final LinkEvent event = new LinkEvent(EventType.LinkRemoved, edge);
-//			graphService.dispatchEvent(event);
-//		}
-//	}
-
 	@Scheduled(initialDelay = 5000, fixedDelay = 60 * 1000 * 10)
 	public void startDiscovery() throws MalformedURLException, RemoteException {
 //		final EventBus eventBus = graphService.getEventBus();
-		new VmwareImporter(graphRepository, VmwareConfig.Host, VmwareConfig.Username, VmwareConfig.Password).startImport();
-	}
-
-	private Vertex createVertex(int id) {
-		return new GenericVertex(NAMESPACE, id);
+		new VmwareImporter(graphService, VmwareConfig.Host, VmwareConfig.Username, VmwareConfig.Password).startImport();
 	}
 }

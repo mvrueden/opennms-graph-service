@@ -26,8 +26,18 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.builder;
+package org.opennms.poc.graph.api;
 
-public enum State {
-    Undefined, Building, Finished
+import org.opennms.poc.graph.api.listener.GraphChangeStartedEvent;
+import org.opennms.poc.graph.api.listener.GraphChangedFinishedEvent;
+
+public interface GraphEventManager  {
+
+    // TODO MVR this is weird
+    void sendGraphChangeStartedEvent(GraphChangeStartedEvent event);
+    // TODO MVR this is weird
+    void sendGraphChangeFinishedEvent(GraphChangedFinishedEvent event);
+
+    void sendVertexAddedEvent(Vertex... vertices);
+    void sendEdgesAddedEvent(Edge... edges);
 }

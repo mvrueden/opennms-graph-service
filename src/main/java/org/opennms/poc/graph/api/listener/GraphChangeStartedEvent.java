@@ -26,10 +26,11 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.events;
+package org.opennms.poc.graph.api.listener;
 
-public class GraphDiscoveryFinishedEvent extends AbstractEvent {
-    public GraphDiscoveryFinishedEvent(String namespace) {
+public class GraphChangeStartedEvent extends AbstractEvent {
+
+    public GraphChangeStartedEvent(String namespace) {
         super(namespace);
     }
 }

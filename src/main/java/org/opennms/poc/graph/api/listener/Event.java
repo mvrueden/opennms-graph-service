@@ -26,7 +26,7 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.events;
+package org.opennms.poc.graph.api.listener;
 
 public interface Event {
     String getNamespace();

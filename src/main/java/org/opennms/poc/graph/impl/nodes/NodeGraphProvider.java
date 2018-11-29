@@ -41,27 +41,24 @@ import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-// Dummy GraphProvider, which shows all nodes. Required to simulate Node Enrichment
+// Dummy GraphProvider, which shows all nodes.
+// Required to simulate Node Enrichment
 @Component
 public class NodeGraphProvider implements GraphProvider {
+
+    private static final String NAMESPACE = "nodes";
 
     @Autowired
     private NodeDao nodeDao;
 
-//    @Override
-    public String getNamespace() {
-        return "nodes";
-    }
-
-//    @Override
-    public Graph getGraph() {
+    private Graph getGraph() {
         final GenericGraph graph = new GenericGraph();
-        graph.setNamespace(getNamespace());
+        graph.setNamespace(NAMESPACE);
 
         nodeDao.findAll().forEach(n -> {
             final GenericVertex v = new GenericVertex();
             v.setProperty(GenericProperties.NODE_ID, n.getId());
-            v.setNamespace(getNamespace());
+            v.setNamespace(NAMESPACE);
             v.setId("" + n.getId());
 
             graph.addVertex(v);
@@ -74,5 +71,10 @@ public class NodeGraphProvider implements GraphProvider {
     public void provideGraph(GraphRepository repository) {
         final Graph graph = getGraph();
         repository.save(graph, PersistenceStrategy.Memory.evictAfter(10, TimeUnit.SECONDS).reloadHook(this));
+    }
+
+    @Override
+    public void shutdownHook(GraphRepository graphRepository) {
+
     }
 }
