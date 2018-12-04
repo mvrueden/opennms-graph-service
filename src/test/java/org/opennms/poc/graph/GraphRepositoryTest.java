@@ -28,7 +28,18 @@
 
 package org.opennms.poc.graph;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+import javax.ws.rs.core.Response;
+
+import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.opennms.poc.graph.api.generic.GenericEdge;
+import org.opennms.poc.graph.api.generic.GenericGraph;
+import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -36,69 +47,46 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest
 public class GraphRepositoryTest {
 
-//    private static final String NAMESPACE = "dummy";
-//
-//    @Autowired
-//    private GraphRepository graphRepository;
-//
-//    @Test
-//    public void verifyGraphPersistence() {
-//        GraphEntity graphEntity = graphRepository.findByNamespace(NAMESPACE);
-//        Assert.assertNull(graphEntity); // nothing persisted yet
-//
-//        GenericGraph g = new GenericGraph();
-//        g.setNamespace(NAMESPACE);
-//
-//        GenericVertex v1 = new GenericVertex(NAMESPACE, "v1");
-//        v1.setProperty("label", "Vertex 1"); // verify string
-//        v1.setProperty("status", Response.Status.OK); // Verify enum
-//        v1.setProperty("number", 10); // Verify int
-//        v1.setProperty("enabled", true); // Verify boolean
-//
-//        GenericVertex v2 = new GenericVertex(NAMESPACE, "v2");
-//        v2.setProperty("label", "Vertex 2");
-//        v2.setProperty("status", Response.Status.BAD_REQUEST);
-//        v2.setProperty("number", 20);
-//        v2.setProperty("enabled", false);
-//
-//        g.addVertex(v1);
-//        g.addVertex(v2);
-//        g.addEdge(new GenericEdge(v1, v2));
-//
-//        graphEntity = convert(g);
-//        graphRepository.persist(graphEntity);
-//
-//        final GraphEntity graphEntity2 = graphRepository.findByNamespace(NAMESPACE);
+    private static final String NAMESPACE = "dummy";
+
+    @Autowired
+    private GraphRepository graphRepository;
+
+    // TODO MVR delete by namespace
+    // TODO MVR define foreign keys
+
+    @Test
+    public void verifyGraphPersistence() {
+        assertNull(graphRepository.findByNamespace(NAMESPACE)); // nothing persisted yet
+
+        final GenericGraph graph = new GenericGraph();
+        graph.setNamespace(NAMESPACE);
+        graph.setProperty("label", "Test Graph");
+        graph.setProperty("description", "Test Graph. Yay.");
+
+        final GenericVertex v1 = new GenericVertex(NAMESPACE, "v1");
+        v1.setProperty("label", "Vertex 1"); // verify string
+        v1.setProperty("status", Response.Status.OK); // Verify enum
+        v1.setProperty("number", 10); // Verify int
+        v1.setProperty("enabled", true); // Verify boolean
+
+        final GenericVertex v2 = new GenericVertex(NAMESPACE, "v2");
+        v2.setProperty("label", "Vertex 2");
+        v2.setProperty("status", Response.Status.BAD_REQUEST);
+        v2.setProperty("number", 20);
+        v2.setProperty("enabled", false);
+
+        graph.addVertex(v1);
+        graph.addVertex(v2);
+        graph.addEdge(new GenericEdge(v1, v2));
+
+        // TODO MVR persist properties
+        graphRepository.save(graph);
+
+        final GenericGraph persistedGraph = graphRepository.findByNamespace(NAMESPACE);
+        assertEquals(graph, persistedGraph);
 //        System.out.println(graphEntity2);
-//
-//    }
-//
-//    // TODO MVR write same test with simpleGraph
-//
-//    private List<Class> supportedClasses = Lists.newArrayList(
-//            Boolean.class, Float.class, Integer.class, Double.class, String.class, Short.class, Byte.class
-//    );
-//
-//    private GraphEntity convert(GenericGraph g) {
-//        final GraphEntity ge = new GraphEntity();
-//        ge.setNamespace(g.getNamespace());
-//
-//        g.getVertices().stream().forEach(v -> {
-//            final VertexEntity ve = new VertexEntity();
-//            for(Map.Entry<String, Object> property : v.getProperties().entrySet()) {
-//                if (property.getValue() != null) {
-//                    if (supportedClasses.contains(property.getValue().getClass()) || property.getValue().getClass().isEnum()) {
-//                        final Property p = new Property();
-//                        p.setName(property.getKey());
-//                        p.setType(property.getValue().getClass());
-//                        p.setValue(property.getValue().toString());
-//                        ve.getProperties().add(p);
-//                    } else {
-//                        throw new IllegalStateException("Vertex contains properties which is neither a primitive nor an enum. Cannot persist");
-//                    }
-//                }
-//            }
-//        });
-//        return ge;
-//    }
+    }
+
+    // TODO MVR write same test with simpleGraph
 }

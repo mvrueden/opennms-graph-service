@@ -28,36 +28,61 @@
 
 package org.opennms.poc.graph.api.persistence;
 
-import java.util.concurrent.TimeUnit;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
 
-import org.opennms.poc.graph.api.GraphProvider;
+@Entity
+@Table(name = "graph_attributes")
+public class PropertyEntity {
 
-public interface PersistenceStrategy {
+    @Id
+    @SequenceGenerator(name = "opennmsSequence", sequenceName = "opennmsNxtId")
+    @GeneratedValue(generator = "opennmsSequence")
+    @Column(name = "id")
+    private Long id;
 
-    // TODO MVR das geht so nicht...
-    MemoryPersistenceStrategy Memory = new MemoryPersistenceStrategy();
+    @Column(name = "name")
+    private String name;
 
-    // TODO MVR das geht so nicht...
-    HibernatePersistenceStrategy Hibernate = new HibernatePersistenceStrategy();
+    @Column(name = "type")
+    private Class type;
 
-    class MemoryPersistenceStrategy implements PersistenceStrategy {
+    @Column(name = "value")
+    private String value;
 
-        private Long evictAfterMs;
-        private GraphProvider reloadHook;
-
-        public MemoryPersistenceStrategy evictAfter(int ms, TimeUnit timeUnit) {
-            evictAfterMs = timeUnit.toMillis(ms);
-            return this;
-        }
-
-        public MemoryPersistenceStrategy reloadHook(GraphProvider provider) {
-            this.reloadHook = provider;
-            return this;
-        }
+    public Long getId() {
+        return id;
     }
 
-    class HibernatePersistenceStrategy implements PersistenceStrategy {
-
+    public void setId(Long id) {
+        this.id = id;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Class getType() {
+        return type;
+    }
+
+    public void setType(Class type) {
+        this.type = type;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
 }

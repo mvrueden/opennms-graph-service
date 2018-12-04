@@ -53,4 +53,9 @@ public interface Graph<V extends Vertex, E extends Edge<V>> {
     V getVertex(String id);
 
     GraphInfo getInfo();
+
+    E getEdge(String id);
+
+    List<String> getVertexIds();
+    List<String> getEdgeIds();
 }

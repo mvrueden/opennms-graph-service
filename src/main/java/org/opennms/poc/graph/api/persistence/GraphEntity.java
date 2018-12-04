@@ -30,38 +30,42 @@ package org.opennms.poc.graph.api.persistence;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.OneToMany;
-import javax.persistence.Table;
+
+import org.hibernate.annotations.Where;
+import org.opennms.poc.graph.api.generic.GenericProperties;
 
 @Entity
-@Table(name = "graphs")
-public class GraphEntity {
-    @Id
-    @GeneratedValue(strategy= GenerationType.AUTO)
-    private Long id;
+@DiscriminatorValue("graph")
+public class GraphEntity extends AbstractGraphElementEntity {
 
-    @Column(name = "namespace")
+    @Column(name = "namespace", unique = true)
     private String namespace;
 
-    @OneToMany
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinTable(name = "graph_elements_relations",
+            joinColumns = { @JoinColumn(name = "graph_id", referencedColumnName = "id") },
+            inverseJoinColumns = { @JoinColumn(name="element_id", referencedColumnName = "id") }
+    )
+    @Where(clause="TYPE='vertex'")
     private List<VertexEntity> vertices = new ArrayList<>();
 
-    @OneToMany
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinTable(name = "graph_elements_relations",
+            joinColumns = { @JoinColumn(name = "graph_id", referencedColumnName = "id") },
+            inverseJoinColumns = { @JoinColumn(name="element_id", referencedColumnName = "id") }
+    )
+    @Where(clause="TYPE='edge'")
     private List<EdgeEntity> edges = new ArrayList<>();
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getNamespace() {
         return namespace;
@@ -85,5 +89,13 @@ public class GraphEntity {
 
     public void setVertices(List<VertexEntity> vertices) {
         this.vertices = vertices;
+    }
+
+    public VertexEntity getVertexByVertexId(String id) {
+        Objects.requireNonNull(id);
+        return vertices.stream()
+                .filter(v -> v.getProperty(GenericProperties.ID).getValue().equalsIgnoreCase(id))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException());
     }
 }

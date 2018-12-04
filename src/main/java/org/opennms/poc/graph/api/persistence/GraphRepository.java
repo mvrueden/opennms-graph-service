@@ -29,20 +29,23 @@
 package org.opennms.poc.graph.api.persistence;
 
 import java.util.List;
+import java.util.function.Function;
 
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.info.GraphInfo;
 
+// Graph Persistence... only for access of underlying persistence (hibernate)
+// To access all graphs (GraphProviders), use the GraphService
 public interface GraphRepository {
 
     <V extends Vertex, E extends Edge<V>, G extends Graph<V, E>> void save(G graph);
 
-    <V extends Vertex, E extends Edge<V>, G extends Graph<V, E>, P extends PersistenceStrategy> void save(G graph, P persistenceStrategy);
+    GenericGraph findByNamespace(String namespace);
 
-    Graph<Vertex, Edge<Vertex>> findByNamespace(String namespace);
+    <G extends Graph<V, E>, V extends Vertex, E extends Edge<V>> G findByNamespace(final String namespace, final Function<GenericGraph, G> transformer);
 
     List<GraphInfo> findAll();
-
 }

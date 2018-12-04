@@ -28,16 +28,12 @@
 
 package org.opennms.poc.graph.impl.bsm;
 
-import java.util.concurrent.TimeUnit;
-
 import org.opennms.netmgt.bsm.service.BusinessServiceManager;
 import org.opennms.netmgt.bsm.service.model.graph.BusinessServiceGraph;
 import org.opennms.netmgt.bsm.service.model.graph.GraphEdge;
 import org.opennms.netmgt.bsm.service.model.graph.GraphVertex;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.persistence.GraphRepository;
-import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -99,18 +95,12 @@ public class BsmGraphProvider implements GraphProvider {
         throw new IllegalArgumentException("Cannot convert GraphVertex to BusinessServiceVertex: " + graphVertex);
     }
 
-    @Override
-    public void provideGraph(GraphRepository repository) {
+    public Graph getGraph() {
         final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
         final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
         for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
             addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
         }
-        repository.save(targetGraph, PersistenceStrategy.Memory.evictAfter(10, TimeUnit.SECONDS).reloadHook(this));
-    }
-
-    @Override
-    public void shutdownHook(GraphRepository graphRepository) {
-
+        return targetGraph;
     }
 }

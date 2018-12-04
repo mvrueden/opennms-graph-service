@@ -26,60 +26,23 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.persistence;
+package org.opennms.poc.graph.impl.vmware;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphProvider;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-@Entity
-//@Table(name = "vertex_properties")
-public class Property {
+@Component
+public class VmwareGraphProvider implements GraphProvider {
 
-    @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
-    private Long id;
+    @Autowired
+    private GraphRepository graphRepository;
 
-    @Column(name = "name")
-    private String name;
-
-    @Column(name = "type")
-    private Class type;
-
-    @Column(name = "value")
-    private String value;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Class getType() {
-        return type;
-    }
-
-    public void setType(Class type) {
-        this.type = type;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
+    @Override
+    public Graph getGraph() {
+        final Graph graph = graphRepository.findByNamespace(VmwareImporter.NAMESPACE);
+        return graph;
     }
 }

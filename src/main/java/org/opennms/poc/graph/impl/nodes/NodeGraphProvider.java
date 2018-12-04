@@ -28,16 +28,12 @@
 
 package org.opennms.poc.graph.impl.nodes;
 
-import java.util.concurrent.TimeUnit;
-
 import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.generic.GenericVertex;
-import org.opennms.poc.graph.api.persistence.GraphRepository;
-import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -51,7 +47,7 @@ public class NodeGraphProvider implements GraphProvider {
     @Autowired
     private NodeDao nodeDao;
 
-    private Graph getGraph() {
+    public Graph getGraph() {
         final GenericGraph graph = new GenericGraph();
         graph.setNamespace(NAMESPACE);
 
@@ -67,14 +63,4 @@ public class NodeGraphProvider implements GraphProvider {
         return graph;
     }
 
-    @Override
-    public void provideGraph(GraphRepository repository) {
-        final Graph graph = getGraph();
-        repository.save(graph, PersistenceStrategy.Memory.evictAfter(10, TimeUnit.SECONDS).reloadHook(this));
-    }
-
-    @Override
-    public void shutdownHook(GraphRepository graphRepository) {
-
-    }
 }

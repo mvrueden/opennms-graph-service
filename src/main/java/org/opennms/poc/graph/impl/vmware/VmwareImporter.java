@@ -36,9 +36,6 @@ import java.util.Objects;
 import java.util.TreeSet;
 
 import org.opennms.poc.graph.api.GraphService;
-import org.opennms.poc.graph.api.listener.GraphChangeStartedEvent;
-import org.opennms.poc.graph.api.listener.GraphChangedFinishedEvent;
-import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.opennms.protocols.vmware.VmwareViJavaAccess;
 
@@ -76,13 +73,10 @@ public class VmwareImporter {
         try {
             vmwareViJavaAccess.connect();
             vmwareViJavaAccess.setTimeout(10 * 1000);
-            graphService.sendGraphChangeStartedEvent(new GraphChangeStartedEvent(NAMESPACE));
             iterateHostSystems(vmwareViJavaAccess);
             iterateVirtualMachines(vmwareViJavaAccess);
-            graphService.getGraphRepository().save(graph, PersistenceStrategy.Hibernate);
-            graphService.sendGraphChangeFinishedEvent(new GraphChangedFinishedEvent(NAMESPACE));
+            graphService.getGraphRepository().save(graph);
         } catch (Exception ex) {
-            graphService.sendGraphChangeFinishedEvent(new GraphChangedFinishedEvent(NAMESPACE, ex));
             throw new RuntimeException(ex);
         } finally {
             vmwareViJavaAccess.disconnect();
@@ -141,7 +135,6 @@ public class VmwareImporter {
                                 // TODO MVR network vertex
                                 final VmwareVertex networkVertex = new VmwareVertex(network.getMOR().getVal());
                                 final VmwareEdge edge = new VmwareEdge(hostSystemVertex, networkVertex);
-                                graphService.sendEdgesAddedEvent(edge);
                                 graph.addEdge(edge);
                             }
                         } catch (RemoteException re) {
@@ -152,14 +145,12 @@ public class VmwareImporter {
                             for (Datastore datastore : hostSystem.getDatastores()) {
                                 final VmwareVertex datastoreVertex = new VmwareVertex(datastore.getMOR().getVal());
                                 final VmwareEdge edge = new VmwareEdge(hostSystemVertex, datastoreVertex);
-                                graphService.sendEdgesAddedEvent(edge);
                                 graph.addEdge(edge);
                             }
                         } catch (RemoteException re) {
                             // TODO MVR
                         }
                         graph.addVertex(hostSystemVertex);
-                        graphService.sendVertexAddedEvent(hostSystemVertex);
                     });
         }
     }

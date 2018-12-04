@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Edge;
@@ -77,12 +78,12 @@ public class DefaultGraphService implements GraphService {
         private GraphProvider provider;
     }
 
+    @Autowired
+    private GraphRepository graphRepository;
+
     private List<GraphProviderEntity> providers = new ArrayList<>();
 
     private List<GraphListenerEntity> listeners = new ArrayList<>();
-
-    @Autowired
-    private GraphRepository graphRepository;
 
     public void onBind(GraphListener listener, Map properties) {
         final GraphListenerEntity entity = new GraphListenerEntity();
@@ -102,28 +103,29 @@ public class DefaultGraphService implements GraphService {
         final GraphProviderEntity entity = new GraphProviderEntity();
         entity.provider = provider;
         entity.namespace = new Namespace((String) properties.getOrDefault("namespace", "*"));
-        entity.provider.provideGraph(graphRepository);
         providers.add(entity);
     }
 
     // OSGi-Hook
     public void onUnbind(GraphProvider provider, Map properties) {
         final List<GraphProviderEntity> removeMe = providers.stream().filter(e -> e.provider == provider).collect(Collectors.toList());
-        removeMe.forEach(e -> e.provider.shutdownHook(graphRepository));
         removeMe.forEach(e -> providers.remove(e));
     }
 
     @Override
-    public List<Graph<? extends Vertex, ? extends Edge<? extends Vertex>>> getGraphs() {
-        return graphRepository.findAll()
-                .stream()
-                .map(p -> graphRepository.findByNamespace(p.getNamespace()))
+    public List<Graph> getGraphs() {
+        final List<Graph> collect = providers.stream().map(e -> e.provider.getGraph())
                 .collect(Collectors.toList());
+        return collect;
     }
 
     @Override
     public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace) {
-        return (Graph<V, E>) graphRepository.findByNamespace(namespace);
+        final Optional<GraphProviderEntity> first = providers.stream().filter(p -> p.namespace.matches(namespace)).findFirst();
+        if (first.isPresent()) {
+            first.get().provider.getGraph();
+        }
+        return null;
     }
 
     @Override

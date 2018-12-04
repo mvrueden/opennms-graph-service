@@ -52,9 +52,11 @@ Based on the dilemma, the following rules apply to provide a very loose model, b
 
 === Multiple Graphs (e.g. Navigate To)
 
-Multiple graphs was not considered so far.
-However could be implemented by simply allow graphs with mixed namespaces.
-Each Vertex has one namespace, whereas the source and target Vertices of an Edge may differ.
+As of now, it is not decided if a GraphProvider can provide multiple graphs, however:
+
+Each graph only contains vertices and edges with the same namespace.
+Any edge may point to or from a vertex with a different namespace (This namespace may or may not exist yet in the GraphRepository).
+If one side of the edge is pointing to another namespace, the opposite vertex must be of the same namespace as the graph the edge is "owned" by.
 
 === Searching
 

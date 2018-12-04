@@ -184,14 +184,14 @@ public class BsmConfiguration {
     private final Properties hibernateProperties() {
         Properties hibernateProperties = new Properties();
 //        hibernateProperties.setProperty("hibernate.hbm2ddl.auto", "create");
-        hibernateProperties.setProperty("hibernate.dialect", "org.hibernate.dialect.HSQLDialect");
+        hibernateProperties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         hibernateProperties.setProperty("hibernate.jdbc.lob.non_contextual_creation", "true");
+        hibernateProperties.setProperty("hibernate.show_sql", "true");
+        hibernateProperties.setProperty("hibernate.format_sql", "true");
         return hibernateProperties;
 
-//        hibernate.dialect=org.hibernate.dialect.HSQLDialect
 //        hibernate.cache.use_query_cache=false
 //        hibernate.cache.use_second_level_cache=false
-//        hibernate.hbm2ddl.auto=create
 //        hibernate.jdbc.batch_size=0
     }
 }

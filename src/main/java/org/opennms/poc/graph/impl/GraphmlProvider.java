@@ -41,8 +41,6 @@ import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericVertex;
-import org.opennms.poc.graph.api.persistence.GraphRepository;
-import org.opennms.poc.graph.api.persistence.PersistenceStrategy;
 
 public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge> {
 
@@ -91,13 +89,10 @@ public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge
 //        return graph;
 //    }
 
-    @Override
-    public void provideGraph(GraphRepository repository) {
-        repository.save(graph, PersistenceStrategy.Hibernate);
-    }
 
     @Override
-    public void shutdownHook(GraphRepository graphRepository) {
-
+    public Graph getGraph() {
+        return graph;
     }
+
 }

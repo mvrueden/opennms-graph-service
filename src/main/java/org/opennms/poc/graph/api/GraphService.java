@@ -34,7 +34,7 @@ import org.opennms.poc.graph.api.persistence.GraphRepository;
 
 public interface GraphService extends GraphEventManager {
 
-    List<Graph<? extends Vertex, ? extends Edge<? extends Vertex>>> getGraphs();
+    List<Graph> getGraphs();
 
     <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace);
 

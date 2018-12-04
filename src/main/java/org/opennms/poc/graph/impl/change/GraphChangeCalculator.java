@@ -26,13 +26,20 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.impl.change;
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+import java.util.Date;
 
-//    List<Graph> getGraphs();
-//
-//    void setNotificationThingy(Void x);
+import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.Vertex;
 
-    Graph<V, E> getGraph();
+public class GraphChangeCalculator {
+
+    // TODO MVR is newGraph null allowed?
+    public <V extends Vertex, E extends Edge<V>> void graphChanged(Graph<V, E> oldGraph, Graph<V, E> newGraph) {
+        final ChangeSet<V, E> changeSet = new ChangeSet(oldGraph.getNamespace(), new Date());
+        changeSet.detectChanges(oldGraph, newGraph);
+    }
+
 }

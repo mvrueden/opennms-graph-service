@@ -30,6 +30,7 @@ package org.opennms.poc.graph.api.generic;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class AbstractElement {
 
@@ -91,4 +92,17 @@ public class AbstractElement {
         setProperty(GenericProperties.ID, id);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AbstractElement that = (AbstractElement) o;
+        return Objects.equals(properties, that.properties) &&
+                Objects.equals(computedProperties, that.computedProperties);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(properties, computedProperties);
+    }
 }

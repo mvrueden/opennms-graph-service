@@ -65,4 +65,19 @@ public class GenericEdge extends AbstractElement implements Edge<GenericVertex> 
     public GenericEdge asGenericEdge() {
         return this;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        GenericEdge that = (GenericEdge) o;
+        return Objects.equals(source, that.source)
+                && Objects.equals(target, that.target);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), source, target);
+    }
 }

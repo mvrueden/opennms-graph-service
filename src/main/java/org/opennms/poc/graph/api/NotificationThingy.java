@@ -28,11 +28,18 @@
 
 package org.opennms.poc.graph.api;
 
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+public interface NotificationThingy {
 
-//    List<Graph> getGraphs();
+//    void graphChanged(Graph old, Graph neew);
 //
-//    void setNotificationThingy(Void x);
+//    public class NotificationThingyImpl implements NotificationThingy {
+//        @Override
+//        public void graphChanged(Graph old, Graph neew) {
+//            List<Changes> change = determineChanges(old, neew);
+//            for (Changes eachChange : change) {
+//                eachChange.invoke(...);
+//            }
+//        }
+//    }
 
-    Graph<V, E> getGraph();
 }

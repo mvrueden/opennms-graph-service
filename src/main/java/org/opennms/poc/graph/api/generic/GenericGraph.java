@@ -30,20 +30,22 @@ package org.opennms.poc.graph.api.generic;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.info.GraphInfo;
-
-import com.google.common.collect.Lists;
 
 // TODO MVR enforce namespace
 public class GenericGraph extends AbstractElement implements Graph<GenericVertex, GenericEdge> {
 
     private final List<GenericVertex> vertices = new ArrayList<>();
     private final List<GenericEdge> edges = new ArrayList<>();
+    private final Map<String, GenericVertex> vertexToIdMap = new HashMap<>();
+    private final Map<String, GenericEdge> edgeToIdMap = new HashMap<>();
 
     public GenericGraph() {}
 
@@ -63,7 +65,7 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
 
     @Override
     public GenericVertex getVertex(String id) {
-        return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElse(null);
+        return vertexToIdMap.get(id);
     }
 
     @Override
@@ -76,6 +78,21 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     }
 
     @Override
+    public GenericEdge getEdge(String id) {
+        return edgeToIdMap.get(id);
+    }
+
+    @Override
+    public List<String> getVertexIds() {
+        return vertexToIdMap.keySet().stream().sorted().collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getEdgeIds() {
+        return edgeToIdMap.keySet().stream().sorted().collect(Collectors.toList());
+    }
+
+    @Override
     public void addEdges(List<GenericEdge> edges) {
         for (GenericEdge eachEdge : edges) {
             addEdge(eachEdge);
@@ -84,29 +101,61 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
 
     @Override
     public void addVertices(List<GenericVertex> vertices) {
-        this.vertices.addAll(vertices); // TODO MVR verify only add if not already added
+        for (GenericVertex eachVertex : vertices) {
+            addVertex(eachVertex);
+        }
     }
 
     @Override
     public void addVertex(GenericVertex vertex) {
         Objects.requireNonNull(vertex);
-        addVertices(Lists.newArrayList(vertex));
+        Objects.requireNonNull(vertex.getId());
+        vertexToIdMap.put(vertex.getId(), vertex);
+        vertices.add(vertex);
     }
 
     @Override
     public void addEdge(GenericEdge edge) {
         Objects.requireNonNull(edge);
+        Objects.requireNonNull(edge.getId());
         if (edge.getSource().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getSource().getId()) == null) {
             addVertex(edge.getSource());
         }
         if (edge.getTarget().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getTarget().getId()) == null) {
             addVertex(edge.getTarget());
         }
-        this.edges.add(edge);
+        edgeToIdMap.put(edge.getId(), edge);
+        edges.add(edge);
+    }
+
+    @Override
+    public void setId(String id) {
+        setNamespace(id);
+    }
+
+    @Override
+    public void setNamespace(String namespace) {
+        super.setNamespace(namespace);
+        super.setId(namespace);
     }
 
     @Override
     public GenericGraph asGenericGraph() {
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        GenericGraph that = (GenericGraph) o;
+        return Objects.equals(vertices, that.vertices) &&
+                Objects.equals(edges, that.edges);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), vertices, edges);
     }
 }

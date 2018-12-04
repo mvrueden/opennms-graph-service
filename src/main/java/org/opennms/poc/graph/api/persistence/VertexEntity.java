@@ -28,42 +28,11 @@
 
 package org.opennms.poc.graph.api.persistence;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
+import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
 
 @Entity
-@Table(name="vertices")
-public class VertexEntity {
+@DiscriminatorValue("vertex")
+public class VertexEntity extends AbstractGraphElementEntity {
 
-    @Id
-    @GeneratedValue(strategy= GenerationType.AUTO)
-    private Long id;
-
-    @Column
-    @ElementCollection(targetClass = Property.class)
-    private List<Property> properties = new ArrayList<>();
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public List<Property> getProperties() {
-        return properties;
-    }
-
-    public void setProperties(List<Property> properties) {
-        this.properties = properties;
-    }
 }
