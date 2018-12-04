@@ -61,7 +61,7 @@ public class GraphRestService {
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<String> listNamespaces() {
-        return graphService.getGraphs().stream().map(g -> g.getNamespace()).collect(Collectors.toList());
+        return graphService.getGraphs().stream().filter(g -> g != null && g.getNamespace() != null).map(g -> g.getNamespace()).collect(Collectors.toList());
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="{namespace}")
@@ -73,27 +73,29 @@ public class GraphRestService {
         jsonGraph.put("edges", edgesArray);
         jsonGraph.put("vertices", verticesArray);
 
-        jsonGraph.putAll(graph.asGenericGraph().getProperties());
-        graph.getEdges().stream().forEach(edge -> {
-            final GenericEdge genericEdge = edge.asGenericEdge();
-            final Map<String, Object> edgeProperties = genericEdge.getProperties();
-            edgeProperties.put("source", genericEdge.getSource().getId());
-            edgeProperties.put("target", genericEdge.getTarget().getId());
-            edgesArray.add(edgeProperties);
-        });
-        graph.getVertices().stream().forEach(vertex -> {
-            final GenericVertex genericVertex = vertex.asGenericVertex();
-            enrichmentProcessors.forEach(p -> {
-                if (p.canEnrich(genericVertex.getNamespace())) {
-                    p.enrich(genericVertex);
-                }
+        if (graph != null) {
+            jsonGraph.putAll(graph.asGenericGraph().getProperties());
+            graph.getEdges().stream().forEach(edge -> {
+                final GenericEdge genericEdge = edge.asGenericEdge();
+                final Map<String, Object> edgeProperties = genericEdge.getProperties();
+                edgeProperties.put("source", genericEdge.getSource().getId());
+                edgeProperties.put("target", genericEdge.getTarget().getId());
+                edgesArray.add(edgeProperties);
             });
+            graph.getVertices().stream().forEach(vertex -> {
+                final GenericVertex genericVertex = vertex.asGenericVertex();
+                enrichmentProcessors.forEach(p -> {
+                    if (p.canEnrich(genericVertex.getNamespace())) {
+                        p.enrich(genericVertex);
+                    }
+                });
 
-            final Map<String, Object> properties = new HashMap<>();
-            properties.putAll(genericVertex.getProperties());
-            properties.putAll(genericVertex.getComputedProperties());
-            verticesArray.add(properties);
-        });
+                final Map<String, Object> properties = new HashMap<>();
+                properties.putAll(genericVertex.getProperties());
+                properties.putAll(genericVertex.getComputedProperties());
+                verticesArray.add(properties);
+            });
+        }
         return jsonGraph;
     }
 

@@ -29,11 +29,16 @@
 package org.opennms.poc.graph.impl.bsm;
 
 import org.opennms.netmgt.bsm.service.BusinessServiceManager;
+import org.opennms.netmgt.bsm.service.BusinessServiceStateChangeHandler;
+import org.opennms.netmgt.bsm.service.model.BusinessService;
+import org.opennms.netmgt.bsm.service.model.Status;
 import org.opennms.netmgt.bsm.service.model.graph.BusinessServiceGraph;
 import org.opennms.netmgt.bsm.service.model.graph.GraphEdge;
 import org.opennms.netmgt.bsm.service.model.graph.GraphVertex;
 import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
+import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -42,7 +47,7 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 
 @Component
-public class BsmGraphProvider implements GraphProvider {
+public class BsmGraphProvider implements GraphProvider, BusinessServiceStateChangeHandler {
 
     public static final String NAMESPACE = "bsm";
 
@@ -52,6 +57,26 @@ public class BsmGraphProvider implements GraphProvider {
     @Scheduled(initialDelay = 1000, fixedDelay = 10000)
     public void reload() {
         serviceManager.getStateMachine().setBusinessServices(serviceManager.getAllBusinessServices());
+    }
+
+    @Override
+    public Graph getGraph() {
+        final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
+        final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
+        for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
+            addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
+        }
+        return targetGraph;
+    }
+
+    @Override
+    public GraphInfo getGraphInfo() {
+        return getGraph();
+    }
+
+    @Override
+    public void setNotificationService(GraphNotificationService notificationService) {
+
     }
 
     private void addVertex(BusinessServiceGraph sourceGraph, Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>>  targetGraph, GraphVertex sourceVertex, AbstractVertex targetVertex) {
@@ -95,12 +120,8 @@ public class BsmGraphProvider implements GraphProvider {
         throw new IllegalArgumentException("Cannot convert GraphVertex to BusinessServiceVertex: " + graphVertex);
     }
 
-    public Graph getGraph() {
-        final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
-        final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
-        for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
-            addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
-        }
-        return targetGraph;
+    @Override
+    public void handleBusinessServiceStateChanged(BusinessService businessService, Status newStatus, Status oldStatus) {
+        // TODO MVR status propagation
     }
 }

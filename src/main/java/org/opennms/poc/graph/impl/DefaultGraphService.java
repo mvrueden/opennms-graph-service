@@ -29,7 +29,7 @@
 package org.opennms.poc.graph.impl;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,14 +42,9 @@ import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.listener.GraphChangeStartedEvent;
-import org.opennms.poc.graph.api.listener.GraphChangedFinishedEvent;
-import org.opennms.poc.graph.api.listener.GraphListener;
-import org.opennms.poc.graph.api.persistence.GraphRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.opennms.poc.graph.api.listener.GraphChangeListener;
+import org.opennms.poc.graph.impl.change.ChangeSet;
 import org.springframework.stereotype.Service;
-
-import com.google.common.collect.Lists;
 
 // How would this listen to events in the first place?
 @Service
@@ -70,7 +65,7 @@ public class DefaultGraphService implements GraphService {
 
     private class GraphListenerEntity {
         private Namespace namespace;
-        private GraphListener listener;
+        private GraphChangeListener listener;
     }
 
     private class GraphProviderEntity {
@@ -78,21 +73,18 @@ public class DefaultGraphService implements GraphService {
         private GraphProvider provider;
     }
 
-    @Autowired
-    private GraphRepository graphRepository;
-
     private List<GraphProviderEntity> providers = new ArrayList<>();
 
     private List<GraphListenerEntity> listeners = new ArrayList<>();
 
-    public void onBind(GraphListener listener, Map properties) {
+    public void onBind(GraphChangeListener listener, Map properties) {
         final GraphListenerEntity entity = new GraphListenerEntity();
         entity.listener = listener;
         entity.namespace = new Namespace((String) properties.getOrDefault("namespace", "*"));
         listeners.add(entity);
     }
 
-    public void onUnbind(GraphListener listener, Map properties) {
+    public void onUnbind(GraphChangeListener listener, Map properties) {
         listeners.removeAll(
                 listeners.stream().filter(e -> e.listener == listener).collect(Collectors.toList())
         );
@@ -103,7 +95,11 @@ public class DefaultGraphService implements GraphService {
         final GraphProviderEntity entity = new GraphProviderEntity();
         entity.provider = provider;
         entity.namespace = new Namespace((String) properties.getOrDefault("namespace", "*"));
+        provider.setNotificationService(this);
         providers.add(entity);
+        if (provider instanceof GraphChangeListener) {
+            onBind((GraphChangeListener) provider, properties);
+        }
     }
 
     // OSGi-Hook
@@ -121,9 +117,12 @@ public class DefaultGraphService implements GraphService {
 
     @Override
     public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace) {
-        final Optional<GraphProviderEntity> first = providers.stream().filter(p -> p.namespace.matches(namespace)).findFirst();
+        final Optional<GraphProviderEntity> first = providers.stream()
+                .filter(p -> p.provider.getGraphInfo() != null
+                                && namespace.equals(p.provider.getGraphInfo().getNamespace()))
+                .findFirst();
         if (first.isPresent()) {
-            first.get().provider.getGraph();
+            return first.get().provider.getGraph();
         }
         return null;
     }
@@ -134,45 +133,42 @@ public class DefaultGraphService implements GraphService {
     }
 
     @Override
-    public void sendGraphChangeStartedEvent(GraphChangeStartedEvent event) {
-        getListeners(event.getNamespace()).forEach(listener -> listener.handleGraphChangeStartEvent(event));
-    }
+    public void graphChanged(Graph oldGraph, Graph newGraph) {
+        if (oldGraph == null && newGraph == null) {
+            return; // If both graphs are null, there is nothing we can do
+        }
 
-    @Override
-    public void sendGraphChangeFinishedEvent(GraphChangedFinishedEvent event) {
-        getListeners(event.getNamespace()).forEach(listener -> listener.handleGraphChangeEndEvent(event));
-    }
+        // Detect changes
+        final String namespace = oldGraph != null ? oldGraph.getNamespace() : newGraph.getNamespace();
+        final ChangeSet<Vertex, Edge<Vertex>> changeSet = new ChangeSet(namespace, new Date()); // TODO MVR in my opinion this should be automatically detected from the graphs
+        changeSet.detectChanges(oldGraph, newGraph);
 
-    @Override
-    public void sendVertexAddedEvent(Vertex... vertices) {
-        final Map<String, List<Vertex>> collect = Arrays.asList(vertices).stream().collect(Collectors.toMap(v -> v.getNamespace(), v -> Lists.newArrayList(v), (vertices1, vertices2) -> {
-            final List<Vertex> list = new ArrayList<>(vertices1);
-            list.addAll(vertices2.stream().filter(v -> !vertices1.contains(v)).collect(Collectors.toList()));
-            return list;
-        }));
-        for (Map.Entry<String, List<Vertex>> eachEntry : collect.entrySet()) {
-            getListeners(eachEntry.getKey()).forEach(l -> l.handleNewVertices(eachEntry.getValue().toArray(new Vertex[eachEntry.getValue().size()])));
+        // Send them out
+        final List<GraphChangeListener> listeners = getListeners(changeSet.getNamespace());
+        for (GraphChangeListener listener : listeners) {
+            // TODO MVR maybe we can just call listener.graphChanged(changeSet) instead?
+            if (changeSet.getVerticesAdded().isEmpty()) {
+                listener.handleVerticesAdded(changeSet.getVerticesAdded());
+            }
+            if (changeSet.getVerticesRemoved().isEmpty()) {
+                listener.handleVerticesRemoved(changeSet.getVerticesRemoved());
+            }
+            if (changeSet.getVerticesUpdated().isEmpty()) {
+                listener.handleVerticesUpdated(changeSet.getVerticesUpdated());
+            }
+            if (changeSet.getEdgesAdded().isEmpty()) {
+                listener.handleEdgesAdded(changeSet.getEdgesAdded());
+            }
+            if (changeSet.getEdgesUpdated().isEmpty()) {
+                listener.handleEdgesUpdated(changeSet.getEdgesUpdated());
+            }
+            if (changeSet.getEdgesRemoved().isEmpty()) {
+                listener.handleEdgesRemoved(changeSet.getEdgesRemoved());
+            }
         }
     }
 
-    @Override
-    public void sendEdgesAddedEvent(Edge... edges) {
-        final Map<String, List<Edge>> collect = Arrays.asList(edges).stream().collect(Collectors.toMap(e -> e.getNamespace(), e -> Lists.newArrayList(e), (edges1, edges2) -> {
-            final List<Edge> list = new ArrayList<>(edges1);
-            list.addAll(edges2.stream().filter(v -> !edges1.contains(v)).collect(Collectors.toList()));
-            return list;
-        }));
-        for (Map.Entry<String, List<Edge>> eachEntry : collect.entrySet()) {
-            getListeners(eachEntry.getKey()).forEach(l -> l.handleNewEdges(eachEntry.getValue().toArray(new Edge[eachEntry.getValue().size()])));
-        }
-    }
-
-    @Override
-    public GraphRepository getGraphRepository() {
-        return graphRepository;
-    }
-
-    private List<GraphListener> getListeners(String namespace) {
+    private List<GraphChangeListener> getListeners(String namespace) {
         return listeners.stream()
                 .filter(entity -> entity.namespace.matches(namespace))
                 .map(entity -> entity.listener)

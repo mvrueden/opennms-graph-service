@@ -26,11 +26,10 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.listener;
+package org.opennms.poc.graph.api;
 
-public class GraphChangeStartedEvent extends AbstractEvent {
+public interface GraphNotificationService {
 
-    public GraphChangeStartedEvent(String namespace) {
-        super(namespace);
-    }
+    void graphChanged(Graph oldGraph, Graph newGraph);
+
 }

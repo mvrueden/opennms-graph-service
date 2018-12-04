@@ -35,9 +35,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
 
-import org.opennms.poc.graph.api.GraphService;
+import javax.annotation.PostConstruct;
+
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphNotificationService;
+import org.opennms.poc.graph.api.GraphProvider;
+import org.opennms.poc.graph.api.generic.GenericGraph;
+import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.persistence.GraphRepository;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.opennms.protocols.vmware.VmwareViJavaAccess;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.vmware.vim25.HostRuntimeInfo;
 import com.vmware.vim25.HostSystemPowerState;
@@ -49,33 +58,37 @@ import com.vmware.vim25.mo.ManagedEntity;
 import com.vmware.vim25.mo.Network;
 import com.vmware.vim25.mo.VirtualMachine;
 
-public class VmwareImporter {
+@Component
+public class VmwareImporter implements GraphProvider<VmwareVertex, VmwareEdge>  {
+
     public static final String NAMESPACE = "vmware";
 
-    private final String username;
-    private final String hostname;
-    private final String password;
-    private final SimpleGraph<VmwareVertex, VmwareEdge> graph = new SimpleGraph<>(NAMESPACE);
+    @Autowired
+    private GraphRepository graphRepository;
+
+    private GenericGraph graph;
 
     // Vmware Host Name -> Vertex
     private final Map<String, HostSystemVertex> hostSystemVertexMap = new HashMap<>();
-    private final GraphService graphService;
 
-    public VmwareImporter(GraphService graphService, String hostname, String username, String password) {
-        this.hostname = hostname;
-        this.username = username;
-        this.password = password;
-        this.graphService = Objects.requireNonNull(graphService);
+    private GraphNotificationService notificationService;
+
+    @PostConstruct
+    public void init() {
+        this.graph = graphRepository.findByNamespace(VmwareImporter.NAMESPACE);
     }
 
     public void startImport() {
-        final VmwareViJavaAccess vmwareViJavaAccess = new VmwareViJavaAccess(hostname, username, password);
+        final VmwareViJavaAccess vmwareViJavaAccess = new VmwareViJavaAccess(VmwareConfig.Host, VmwareConfig.Username, VmwareConfig.Password);
         try {
+            final SimpleGraph<VmwareVertex, VmwareEdge> newGraph = new SimpleGraph<>(NAMESPACE);
             vmwareViJavaAccess.connect();
             vmwareViJavaAccess.setTimeout(10 * 1000);
-            iterateHostSystems(vmwareViJavaAccess);
-            iterateVirtualMachines(vmwareViJavaAccess);
-            graphService.getGraphRepository().save(graph);
+            iterateHostSystems(newGraph, vmwareViJavaAccess);
+            iterateVirtualMachines(newGraph, vmwareViJavaAccess);
+            graphRepository.save(newGraph);
+            graph = newGraph.asGenericGraph(); // TODO MVR this should be doable in a different way
+            notificationService.graphChanged(graph, newGraph);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         } finally {
@@ -109,7 +122,22 @@ public class VmwareImporter {
 //        return requisitionNode;
     }
 
-    private void iterateHostSystems(VmwareViJavaAccess vmwareViJavaAccess) throws RemoteException {
+    @Override
+    public void setNotificationService(GraphNotificationService notificationService) {
+        this.notificationService = Objects.requireNonNull(notificationService);
+    }
+
+    @Override
+    public Graph getGraph() {
+        return graph;
+    }
+
+    @Override
+    public GraphInfo getGraphInfo() {
+        return graph; // TODO MVR NPE...
+    }
+
+    private void iterateHostSystems(final Graph graph, VmwareViJavaAccess vmwareViJavaAccess) throws RemoteException {
         final ManagedEntity[] managedEntities = vmwareViJavaAccess.searchManagedEntities("HostSystem");
         if (managedEntities != null) {
             Arrays.stream(managedEntities)
@@ -135,6 +163,7 @@ public class VmwareImporter {
                                 // TODO MVR network vertex
                                 final VmwareVertex networkVertex = new VmwareVertex(network.getMOR().getVal());
                                 final VmwareEdge edge = new VmwareEdge(hostSystemVertex, networkVertex);
+                                edge.setId("Edge:" + edge.getSource().getId() + "=>" + edge.getTarget().getId());
                                 graph.addEdge(edge);
                             }
                         } catch (RemoteException re) {
@@ -145,6 +174,7 @@ public class VmwareImporter {
                             for (Datastore datastore : hostSystem.getDatastores()) {
                                 final VmwareVertex datastoreVertex = new VmwareVertex(datastore.getMOR().getVal());
                                 final VmwareEdge edge = new VmwareEdge(hostSystemVertex, datastoreVertex);
+                                edge.setId("Edge:" + edge.getSource().getId() + "=>" + edge.getTarget().getId());
                                 graph.addEdge(edge);
                             }
                         } catch (RemoteException re) {
@@ -155,7 +185,7 @@ public class VmwareImporter {
         }
     }
 
-    private void iterateVirtualMachines(VmwareViJavaAccess vmwareViJavaAccess) throws RemoteException {
+    private void iterateVirtualMachines(Graph graph, VmwareViJavaAccess vmwareViJavaAccess) throws RemoteException {
         final ManagedEntity[] managedEntities = vmwareViJavaAccess.searchManagedEntities("VirtualMachine");
         if (managedEntities != null) {
             Arrays.stream(managedEntities)
@@ -178,8 +208,8 @@ public class VmwareImporter {
                         }
 
                         final VmwareEdge edge = new VmwareEdge(hostSystemVertexMap.get(virtualMachine.getRuntime().getHost().getVal()), virtualMachineVertex);
+                        edge.setId("Edge:" + edge.getSource().getId() + "=>" + edge.getTarget().getId());
                         graph.addEdge(edge);
-//                        eventBus.post(new AddEdgeEvent<>(edge));
                     });
         }
     }

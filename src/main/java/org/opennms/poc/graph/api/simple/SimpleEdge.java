@@ -60,6 +60,11 @@ public class SimpleEdge<V extends SimpleVertex> implements Edge<V> {
         return id;
     }
 
+    // TODO MVR this should be handled automatically in some sort?!
+    public void setId(String id) {
+        this.id = id;
+    }
+
     @Override
     public V getSource() {
         return source;

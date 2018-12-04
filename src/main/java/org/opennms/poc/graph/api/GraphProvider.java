@@ -28,11 +28,17 @@
 
 package org.opennms.poc.graph.api;
 
+import org.opennms.poc.graph.api.info.GraphInfo;
+
+// TODO MVR the provider must provide information such as namespace, label, descriptin, etc. even if the graph itself is not loaded yet.
 public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
 
 //    List<Graph> getGraphs();
 //
-//    void setNotificationThingy(Void x);
+    void setNotificationService(GraphNotificationService notificationService);
 
     Graph<V, E> getGraph();
+
+    // TODO MVR this is weird... because it is only required for label, description and namespace, when the graph is not yet ready
+    GraphInfo getGraphInfo();
 }

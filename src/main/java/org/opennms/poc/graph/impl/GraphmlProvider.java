@@ -37,10 +37,12 @@ import org.opennms.features.graphml.model.GraphMLGraph;
 import org.opennms.features.graphml.model.GraphMLReader;
 import org.opennms.features.graphml.model.InvalidGraphException;
 import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.info.GraphInfo;
 
 public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge> {
 
@@ -91,7 +93,17 @@ public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge
 
 
     @Override
+    public void setNotificationService(GraphNotificationService notificationService) {
+
+    }
+
+    @Override
     public Graph getGraph() {
+        return graph;
+    }
+
+    @Override
+    public GraphInfo getGraphInfo() {
         return graph;
     }
 

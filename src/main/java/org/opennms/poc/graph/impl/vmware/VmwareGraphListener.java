@@ -28,55 +28,35 @@
 
 package org.opennms.poc.graph.impl.vmware;
 
-import java.util.Objects;
+import java.util.List;
 
 import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphNotificationService;
+import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericVertex;
-import org.opennms.poc.graph.api.listener.GraphChangeStartedEvent;
-import org.opennms.poc.graph.api.listener.GraphChangedFinishedEvent;
-import org.opennms.poc.graph.api.listener.GraphListener;
-import org.opennms.poc.graph.api.persistence.GraphRepository;
+import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class VmwareGraphListener implements GraphListener {
+public class VmwareGraphListener implements GraphChangeListener, GraphProvider {
 
     private final static Logger LOG = LoggerFactory.getLogger(VmwareGraphListener.class);
-    private final GraphRepository graphRepository;
     private GenericGraph graph;
 
-    public VmwareGraphListener(GraphRepository graphRepository) {
-        this.graphRepository = Objects.requireNonNull(graphRepository);
+    public VmwareGraphListener() {
+        graph = new GenericGraph();
+        graph.setNamespace("vmware.listener");
     }
 
     @Override
-    public void handleGraphChangeStartEvent(GraphChangeStartedEvent startedEvent) {
-        if (startedEvent.getNamespace().equalsIgnoreCase("vmware")) {
-            LOG.info("Graph Creation started");
-            graph = new GenericGraph();
-            graph.setNamespace(startedEvent.getNamespace() + ".listener");
-        }
-    }
-
-    @Override
-    public void handleGraphChangeEndEvent(GraphChangedFinishedEvent finishedEvent) {
-        if (finishedEvent.getNamespace().equalsIgnoreCase("vmware")) {
-            LOG.info("Graph Creation finished: {}", finishedEvent.isSuccess());
-            if (finishedEvent.isSuccess()) {
-                graphRepository.save(graph);
-            } else {
-                // it was not successful, so we don't do anything
-            }
-        }
-    }
-
-    @Override
-    public void handleNewVertices(Vertex... vertices) {
-        LOG.info("Vertex added: {}", vertices);
-        for (Vertex eachVertex : vertices) {
+    public void handleVerticesAdded(List<Vertex> verticesAdded) {
+        LOG.info("Vertex added: {}", verticesAdded);
+        for (Vertex eachVertex : verticesAdded) {
             if (eachVertex.getNamespace().equalsIgnoreCase("vmware")) {
                 final GenericVertex v = eachVertex.asGenericVertex();
                 v.setNamespace(graph.getNamespace());
@@ -86,14 +66,49 @@ public class VmwareGraphListener implements GraphListener {
     }
 
     @Override
-    public void handleNewEdges(Edge... edges) {
-        LOG.info("Edge added {}", edges);
-        for (Edge eachEdge : edges) {
+    public void handleVerticesRemoved(List<Vertex> verticesRemoved) {
+
+    }
+
+    @Override
+    public void handleVerticesUpdated(List<Vertex> verticesUpdated) {
+
+    }
+
+    @Override
+    public void handleEdgesAdded(List<Edge<Vertex>> edgesAdded) {
+        LOG.info("Edge added {}", edgesAdded);
+        for (Edge eachEdge : edgesAdded) {
             if (eachEdge.getNamespace().equalsIgnoreCase("vmware")) {
                 final GenericEdge genericEdge = eachEdge.asGenericEdge();
                 genericEdge.setNamespace(graph.getNamespace());
                 graph.addEdge(genericEdge);
             }
         }
+    }
+
+    @Override
+    public void handleEdgesUpdated(List<Edge<Vertex>> edgesUpdated) {
+
+    }
+
+    @Override
+    public void handleEdgesRemoved(List<Edge<Vertex>> edgesRemoved) {
+
+    }
+
+    @Override
+    public void setNotificationService(GraphNotificationService notificationService) {
+
+    }
+
+    @Override
+    public Graph getGraph() {
+        return graph;
+    }
+
+    @Override
+    public GraphInfo getGraphInfo() {
+        return graph;
     }
 }

@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Graph;
-import org.opennms.poc.graph.api.info.GraphInfo;
 
 // TODO MVR enforce namespace
 public class GenericGraph extends AbstractElement implements Graph<GenericVertex, GenericEdge> {
@@ -69,12 +68,13 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     }
 
     @Override
-    public GraphInfo getInfo() {
-        final GraphInfo info = new GraphInfo();
-        info.setNamespace(getNamespace());
-        info.setDescription(getProperty(GenericProperties.DESCRIPTION));
-        info.setName(getProperty(GenericProperties.LABEL));
-        return info;
+    public String getLabel() {
+        return getProperty(GenericProperties.LABEL);
+    }
+
+    @Override
+    public String getDescription() {
+        return getProperty(GenericProperties.DESCRIPTION);
     }
 
     @Override

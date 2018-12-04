@@ -30,15 +30,11 @@ package org.opennms.poc.graph.api;
 
 import java.util.List;
 
-import org.opennms.poc.graph.api.persistence.GraphRepository;
-
-public interface GraphService extends GraphEventManager {
+public interface GraphService extends GraphNotificationService {
 
     List<Graph> getGraphs();
 
     <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace);
 
     <V extends Vertex, E extends Edge<V>> Graph<V, E> getSnapshot(Query query);
-
-    GraphRepository getGraphRepository();
 }

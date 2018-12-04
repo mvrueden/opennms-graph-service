@@ -26,18 +26,23 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.listener;
 
-import org.opennms.poc.graph.api.listener.GraphChangeStartedEvent;
-import org.opennms.poc.graph.api.listener.GraphChangedFinishedEvent;
+import java.util.List;
 
-public interface GraphEventManager  {
+import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Vertex;
 
-    // TODO MVR this is weird
-    void sendGraphChangeStartedEvent(GraphChangeStartedEvent event);
-    // TODO MVR this is weird
-    void sendGraphChangeFinishedEvent(GraphChangedFinishedEvent event);
+public interface GraphChangeListener {
+    void handleVerticesAdded(List<Vertex> verticesAdded);
 
-    void sendVertexAddedEvent(Vertex... vertices);
-    void sendEdgesAddedEvent(Edge... edges);
+    void handleVerticesRemoved(List<Vertex> verticesRemoved);
+
+    void handleVerticesUpdated(List<Vertex> verticesUpdated);
+
+    void handleEdgesAdded(List<Edge<Vertex>> edgesAdded);
+
+    void handleEdgesUpdated(List<Edge<Vertex>> edgesUpdated);
+
+    void handleEdgesRemoved(List<Edge<Vertex>> edgesRemoved);
 }

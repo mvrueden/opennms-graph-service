@@ -28,32 +28,8 @@
 
 package org.opennms.poc.graph.api.info;
 
-public class GraphInfo {
-    private String namespace;
-    private String description;
-    private String name;
-
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+public interface GraphInfo {
+    String getNamespace();
+    String getDescription();
+    String getLabel();
 }

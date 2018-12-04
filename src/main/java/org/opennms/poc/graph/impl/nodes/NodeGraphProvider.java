@@ -30,10 +30,12 @@ package org.opennms.poc.graph.impl.nodes;
 
 import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.info.GraphInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -46,6 +48,11 @@ public class NodeGraphProvider implements GraphProvider {
 
     @Autowired
     private NodeDao nodeDao;
+
+    @Override
+    public void setNotificationService(GraphNotificationService notificationService) {
+
+    }
 
     public Graph getGraph() {
         final GenericGraph graph = new GenericGraph();
@@ -61,6 +68,11 @@ public class NodeGraphProvider implements GraphProvider {
         });
 
         return graph;
+    }
+
+    @Override
+    public GraphInfo getGraphInfo() {
+        return getGraph();
     }
 
 }

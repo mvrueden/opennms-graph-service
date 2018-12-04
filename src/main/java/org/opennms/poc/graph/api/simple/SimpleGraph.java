@@ -40,7 +40,7 @@ import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericGraph;
-import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.generic.GenericProperties;
 
 // TODO MVR enforce namespace
 // TODO MVR this is basically a copy of GenericGraph :'(
@@ -51,6 +51,9 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     private final List<V> vertices = new ArrayList<>();
     private final List<E> edges = new ArrayList<>();
     private final String namespace;
+
+    private String label;
+    private String description;
 
     private final Map<String, V> vertexToIdMap = new HashMap<>();
     private final Map<String, E> edgeToIdMap = new HashMap<>();
@@ -74,6 +77,23 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
         return namespace;
     }
 
+    @Override
+    public String getDescription() {
+        return description;
+    }
+
+    @Override
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     @Override
     public void addEdges(List<E> edges) {
@@ -118,13 +138,6 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     }
 
     @Override
-    public GraphInfo getInfo() {
-        final GraphInfo info = new GraphInfo();
-        info.setNamespace(getNamespace());
-        return info;
-    }
-
-    @Override
     public E getEdge(String id) {
         return edgeToIdMap.get(id);
     }
@@ -143,8 +156,9 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     @Override
     public GenericGraph asGenericGraph() {
         final GenericGraph graph = new GenericGraph();
-        graph.setProperty("info", getInfo());
         graph.setNamespace(getNamespace());
+        graph.setProperty(GenericProperties.LABEL, getLabel());
+        graph.setProperty(GenericProperties.DESCRIPTION, getDescription());
         getVertices().stream().map(Vertex::asGenericVertex).forEach(graph::addVertex);
         getEdges().stream().map(Edge::asGenericEdge).forEach(graph::addEdge);
         return graph;

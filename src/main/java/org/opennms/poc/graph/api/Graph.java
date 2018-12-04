@@ -33,14 +33,12 @@ import java.util.List;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.info.GraphInfo;
 
-public interface Graph<V extends Vertex, E extends Edge<V>> {
+public interface Graph<V extends Vertex, E extends Edge<V>> extends GraphInfo {
     List<V> getVertices();
 
     List<E> getEdges();
 
     String getNamespace();
-
-    GenericGraph asGenericGraph();
 
     void addEdges(List<E> edges);
 
@@ -52,10 +50,10 @@ public interface Graph<V extends Vertex, E extends Edge<V>> {
     // TODO MVR make this more generic...
     V getVertex(String id);
 
-    GraphInfo getInfo();
-
     E getEdge(String id);
 
     List<String> getVertexIds();
     List<String> getEdgeIds();
+
+    GenericGraph asGenericGraph();
 }

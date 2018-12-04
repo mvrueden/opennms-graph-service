@@ -124,11 +124,7 @@ public class DefaultGraphRepository implements GraphRepository {
     @Override
     public List<GraphInfo> findAll() {
         final List<GraphEntity> graphs = accessor.find("Select g from GraphEntity g");
-        final List<GraphInfo> graphInfos = graphs.stream().map(g -> {
-            GraphInfo gi = new GraphInfo();
-            gi.setNamespace(g.getNamespace());
-            return gi;
-        }).collect(Collectors.toList());
+        final List<GraphInfo> graphInfos = new ArrayList<>(graphs);
         return graphInfos;
     }
 
