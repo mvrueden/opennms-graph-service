@@ -47,6 +47,9 @@ public interface Graph<V extends Vertex, E extends Edge<V>> extends GraphInfo {
     void addVertex(V vertex);
     void addEdge(E edge);
 
+    void removeEdge(E edge);
+    void removeVertex(V vertex);
+
     // TODO MVR make this more generic...
     V getVertex(String id);
 

@@ -137,6 +137,16 @@ public class ChangeSet<V extends Vertex, E extends Edge<V>> {
         }
     }
 
+    public boolean hasChanges() {
+        return hasGraphInfoChanged()
+                || !edgesAdded.isEmpty()
+                || !edgesRemoved.isEmpty()
+                || !edgesUpdated.isEmpty()
+                || !verticesAdded.isEmpty()
+                || !verticesRemoved.isEmpty()
+                || !verticesUpdated.isEmpty();
+    }
+
     protected void detectVertexChanges(Graph<V, E> oldGraph, Graph<V, E> newGraph) {
         // Find all vertices/edges which are in the old and new graph
         final List<String> oldVertexIds = new ArrayList<>(oldGraph.getVertexIds());

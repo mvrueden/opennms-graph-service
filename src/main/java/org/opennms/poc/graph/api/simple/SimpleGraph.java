@@ -133,6 +133,20 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     }
 
     @Override
+    public void removeEdge(E edge) {
+        Objects.requireNonNull(edge);
+        edgeToIdMap.remove(edge.getId());
+        edges.remove(edge);
+    }
+
+    @Override
+    public void removeVertex(V vertex) {
+        Objects.requireNonNull(vertex);
+        vertexToIdMap.remove(vertex.getId());
+        vertices.remove(vertex);
+    }
+
+    @Override
     public V getVertex(String id) {
         return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElse(null);
     }

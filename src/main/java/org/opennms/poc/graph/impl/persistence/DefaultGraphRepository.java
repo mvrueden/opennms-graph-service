@@ -29,6 +29,7 @@
 package org.opennms.poc.graph.impl.persistence;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import org.opennms.poc.graph.api.persistence.GraphEntity;
 import org.opennms.poc.graph.api.persistence.GraphRepository;
 import org.opennms.poc.graph.api.persistence.PropertyEntity;
 import org.opennms.poc.graph.api.persistence.VertexEntity;
+import org.opennms.poc.graph.impl.change.ChangeSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,7 +97,32 @@ public class DefaultGraphRepository implements GraphRepository {
         Objects.requireNonNull(graph);
         final GenericGraph genericGraph = graph.asGenericGraph();
         final GraphEntity graphEntity = toEntity(genericGraph);
-        accessor.save(graphEntity);
+
+        // Here we detect if a graph must be updated or persisted
+        // This way we always detect changes even if the entity persisted was not received from the persistence context
+        // in the first place.
+        final GenericGraph persistedGraph = findByNamespace(graph.getNamespace());
+        if (persistedGraph == null) {
+            accessor.save(graphEntity);
+        } else {
+            final ChangeSet<GenericVertex, GenericEdge> changeSet = new ChangeSet<>(graph.getNamespace(), new Date());
+            changeSet.detectChanges(persistedGraph, genericGraph);
+            if (changeSet.hasChanges()) {
+                changeSet.getEdgesRemoved().forEach(edge -> persistedGraph.removeEdge(edge));
+                changeSet.getEdgesAdded().forEach(edge -> persistedGraph.addEdge(edge));
+                changeSet.getEdgesUpdated().forEach(edge -> {
+                    final GenericEdge persistedEdge = persistedGraph.getEdge(edge.getId());
+                    persistedEdge.setProperties(edge.getProperties());
+                });
+                changeSet.getVerticesRemoved().forEach(vertex -> persistedGraph.removeVertex(vertex));
+                changeSet.getVerticesAdded().forEach(vertex -> persistedGraph.addVertex(vertex));
+                changeSet.getVerticesUpdated().forEach(vertex -> {
+                    final GenericVertex persistedVertex = persistedGraph.getVertex(vertex.getId());
+                    persistedVertex.setProperties(vertex.getProperties());
+                });
+                accessor.update(persistedGraph);
+            }
+        }
     }
 
     @Override

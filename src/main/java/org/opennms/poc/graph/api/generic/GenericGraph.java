@@ -129,6 +129,20 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     }
 
     @Override
+    public void removeEdge(GenericEdge edge) {
+        Objects.requireNonNull(edge);
+        edgeToIdMap.remove(edge.getId());
+        edges.remove(edge);
+    }
+
+    @Override
+    public void removeVertex(GenericVertex vertex) {
+        Objects.requireNonNull(vertex);
+        vertexToIdMap.remove(vertex.getId());
+        vertices.remove(vertex);
+    }
+
+    @Override
     public void setId(String id) {
         setNamespace(id);
     }

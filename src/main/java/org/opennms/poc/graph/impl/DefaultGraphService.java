@@ -143,27 +143,29 @@ public class DefaultGraphService implements GraphService {
         final ChangeSet<Vertex, Edge<Vertex>> changeSet = new ChangeSet(namespace, new Date()); // TODO MVR in my opinion this should be automatically detected from the graphs
         changeSet.detectChanges(oldGraph, newGraph);
 
-        // Send them out
-        final List<GraphChangeListener> listeners = getListeners(changeSet.getNamespace());
-        for (GraphChangeListener listener : listeners) {
-            // TODO MVR maybe we can just call listener.graphChanged(changeSet) instead?
-            if (changeSet.getVerticesAdded().isEmpty()) {
-                listener.handleVerticesAdded(changeSet.getVerticesAdded());
-            }
-            if (changeSet.getVerticesRemoved().isEmpty()) {
-                listener.handleVerticesRemoved(changeSet.getVerticesRemoved());
-            }
-            if (changeSet.getVerticesUpdated().isEmpty()) {
-                listener.handleVerticesUpdated(changeSet.getVerticesUpdated());
-            }
-            if (changeSet.getEdgesAdded().isEmpty()) {
-                listener.handleEdgesAdded(changeSet.getEdgesAdded());
-            }
-            if (changeSet.getEdgesUpdated().isEmpty()) {
-                listener.handleEdgesUpdated(changeSet.getEdgesUpdated());
-            }
-            if (changeSet.getEdgesRemoved().isEmpty()) {
-                listener.handleEdgesRemoved(changeSet.getEdgesRemoved());
+        if (changeSet.hasChanges()) {
+            // Send them out
+            final List<GraphChangeListener> listeners = getListeners(changeSet.getNamespace());
+            for (GraphChangeListener listener : listeners) {
+                // TODO MVR maybe we can just call listener.graphChanged(changeSet) instead?
+                if (changeSet.getVerticesAdded().isEmpty()) {
+                    listener.handleVerticesAdded(changeSet.getVerticesAdded());
+                }
+                if (changeSet.getVerticesRemoved().isEmpty()) {
+                    listener.handleVerticesRemoved(changeSet.getVerticesRemoved());
+                }
+                if (changeSet.getVerticesUpdated().isEmpty()) {
+                    listener.handleVerticesUpdated(changeSet.getVerticesUpdated());
+                }
+                if (changeSet.getEdgesAdded().isEmpty()) {
+                    listener.handleEdgesAdded(changeSet.getEdgesAdded());
+                }
+                if (changeSet.getEdgesUpdated().isEmpty()) {
+                    listener.handleEdgesUpdated(changeSet.getEdgesUpdated());
+                }
+                if (changeSet.getEdgesRemoved().isEmpty()) {
+                    listener.handleEdgesRemoved(changeSet.getEdgesRemoved());
+                }
             }
         }
     }
