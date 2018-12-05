@@ -35,6 +35,7 @@ import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -72,7 +73,9 @@ public class NodeGraphProvider implements GraphProvider {
 
     @Override
     public GraphInfo getGraphInfo() {
-        return getGraph();
+        return new DefaultGraphInfo(NAMESPACE)
+                .withLabel("Nodes")
+                .withDescription("Visualizes all nodes (Later this will be enlind topology)");
     }
 
 }

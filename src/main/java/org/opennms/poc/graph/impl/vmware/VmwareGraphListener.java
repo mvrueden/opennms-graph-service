@@ -38,6 +38,7 @@ import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.slf4j.Logger;
@@ -109,6 +110,8 @@ public class VmwareGraphListener implements GraphChangeListener<Vertex, Edge<Ver
 
     @Override
     public GraphInfo getGraphInfo() {
-        return graph;
+        return new DefaultGraphInfo(graph.getNamespace())
+                .withLabel("VMware Listener Provider")
+                .withDescription("Listens for updates of the VMWare Importer to dynamically build the graph");
     }
 }

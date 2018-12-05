@@ -31,7 +31,6 @@ package org.opennms.poc.graph.rest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -42,6 +41,7 @@ import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.enrichment.VertexEnrichmentProcessor;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.info.GraphInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,8 +60,11 @@ public class GraphRestService {
     private List<VertexEnrichmentProcessor> enrichmentProcessors;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<String> listNamespaces() {
-        return graphService.getGraphs().stream().filter(g -> g != null && g.getNamespace() != null).map(g -> g.getNamespace()).collect(Collectors.toList());
+    public List<GraphInfo> listNamespaces() {
+        // TODO MVR a Graph implements GraphInfo and some of them return the graph (e.g. GraphML) as they are static anyways
+        // and contain the information. However if that object is returned here, the whole graph is returned instead of just label,namespace,description,etc.
+        // We should probably find a way to NOT do that
+        return graphService.getGraphDetails();
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="{namespace}")

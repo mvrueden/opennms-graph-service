@@ -38,6 +38,7 @@ import org.opennms.netmgt.bsm.service.model.graph.GraphVertex;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
+import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,10 @@ public class BsmGraphProvider implements GraphProvider, BusinessServiceStateChan
     @Autowired
     private BusinessServiceManager serviceManager;
 
+    private GraphInfo graphInfo = new DefaultGraphInfo(NAMESPACE)
+            .withLabel("Business Services")
+            .withDescription("Displays the hierarchy of defined Business Services and their computed operational states.");
+
     @Scheduled(initialDelay = 1000, fixedDelay = 10000)
     public void reload() {
         serviceManager.getStateMachine().setBusinessServices(serviceManager.getAllBusinessServices());
@@ -62,16 +67,17 @@ public class BsmGraphProvider implements GraphProvider, BusinessServiceStateChan
     @Override
     public Graph getGraph() {
         final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
-        final Graph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
+        final SimpleGraph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
         for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {
             addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
         }
+        targetGraph.applyInfo(graphInfo);
         return targetGraph;
     }
 
     @Override
     public GraphInfo getGraphInfo() {
-        return getGraph();
+        return graphInfo;
     }
 
     @Override

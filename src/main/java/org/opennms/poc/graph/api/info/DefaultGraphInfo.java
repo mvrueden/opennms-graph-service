@@ -26,18 +26,54 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.info;
 
-import org.opennms.poc.graph.api.info.GraphInfo;
+import java.util.Objects;
 
-// TODO MVR the provider must provide information such as namespace, label, descriptin, etc. even if the graph itself is not loaded yet.
-// TODO MVR the graph provider should probably return multiple graphs (e.g. graphml)
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+public class DefaultGraphInfo implements GraphInfo {
 
-    void setNotificationService(GraphNotificationService notificationService);
+    private String namespace;
+    private String description;
+    private String label;
 
-    Graph<V, E> getGraph();
+    public DefaultGraphInfo(final String namespace) {
+        this.namespace = Objects.requireNonNull(namespace);
+    }
 
-    // TODO MVR this is weird... because it is only required for label, description and namespace, when the graph is not yet ready
-    GraphInfo getGraphInfo();
+    @Override
+    public String getNamespace() {
+        return namespace;
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
+    }
+
+    @Override
+    public String getLabel() {
+        return label;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public DefaultGraphInfo withLabel(String label) {
+        setLabel(label);
+        return this;
+    }
+
+    public DefaultGraphInfo withDescription(String description) {
+        setDescription(description);
+        return this;
+    }
 }

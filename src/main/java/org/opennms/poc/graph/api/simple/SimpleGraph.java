@@ -41,6 +41,7 @@ import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericProperties;
+import org.opennms.poc.graph.api.info.GraphInfo;
 
 // TODO MVR enforce namespace
 // TODO MVR this is basically a copy of GenericGraph :'(
@@ -168,6 +169,13 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
         return edgeToIdMap.keySet().stream().sorted().collect(Collectors.toList());
     }
 
+    public void applyInfo(GraphInfo info) {
+        if (!info.getNamespace().equalsIgnoreCase(namespace)) {
+            throw new IllegalArgumentException("Cannot apply given info due to mismatched namespace");
+        }
+        setLabel(info.getLabel());
+        setDescription(info.getDescription());
+    }
 
     @Override
     public GenericGraph asGenericGraph() {

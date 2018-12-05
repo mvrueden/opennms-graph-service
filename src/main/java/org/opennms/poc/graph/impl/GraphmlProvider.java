@@ -44,17 +44,25 @@ import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.info.GraphInfo;
 
+/**
+ * This provider is registered when and only when an actual GraphML graph is already available.
+ * Therefore it is very static and supports no dynamicness. It is just a model 2 model conversion from
+ * the graphml model to the OpenNMS Graph Model.
+ */
 public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge> {
 
     private final Graph graph;
 
     public GraphmlProvider(InputStream inputStream) throws InvalidGraphException {
-        final GraphML graphML = GraphMLReader.read(inputStream);
+        this(GraphMLReader.read(inputStream));
+    }
+
+    public GraphmlProvider(GraphML graphML) {
         // TODO MVR handle multiple graphs properly
 
         // TODO MVR NPE...
         final GraphMLGraph graphMLGraph = graphML.getGraphs().get(1);
-        final Graph<GenericVertex, GenericEdge> graph = new GenericGraph(graphMLGraph.getProperties());
+        final GenericGraph graph = new GenericGraph(graphMLGraph.getProperties());
         final List<GenericVertex> vertices = graphMLGraph.getNodes()
                 .stream().map(n -> {
                     // In case of GraphML each vertex does not have a namespace, but it is inherited from the graph
@@ -81,17 +89,6 @@ public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge
         this.graph = graph;
     }
 
-//    @Override
-//    public String getNamespace() {
-//        return graph.getNamespace();
-//    }
-//
-//    @Override
-//    public Graph getGraph() {
-//        return graph;
-//    }
-
-
     @Override
     public void setNotificationService(GraphNotificationService notificationService) {
 
@@ -104,7 +101,8 @@ public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge
 
     @Override
     public GraphInfo getGraphInfo() {
-        return graph;
+        return graph; // AS this is static content, the graphinfo is already part of the graph, no extra setup required
+        // Maybe we should enforce label and description, but meeeh
     }
 
 }

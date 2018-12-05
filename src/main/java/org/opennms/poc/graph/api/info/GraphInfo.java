@@ -29,7 +29,14 @@
 package org.opennms.poc.graph.api.info;
 
 public interface GraphInfo {
+
+    // The namespace of the graph. Should be unique overall Graphs
     String getNamespace();
+
+    // A short description of the graph to help user's understand what the context of the graph is, e.g.
+    // "This provider shows the hierarchy of the defined Business Services and their computed operational states."
     String getDescription();
+
+    // A user friendly name/label of the graph, e.g. "Business Service Graph"
     String getLabel();
 }

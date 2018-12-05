@@ -54,9 +54,15 @@
         <main role="main" class="container-fluid" style="padding-top: 60px;">
             <div class="row">
                 <div class="col-md-2 bg-light">
-                    <span><b>Selection Info</b></span>
-                    <div class="col-2-md" id="info" style="overflow:hidden">
-                        <span class="text-muted">Nothing selected</span>
+                    <span><b id="graph-label"></b></span>
+                    <div id="graph-description">
+
+                    </div>
+                    <div class="mt-2" style="overflow:hidden">
+                        <span><b>Selection Info</b></span>
+                        <div id="info" class="small">
+                            <span class="text-muted">Nothing selected</span>
+                        </div>
                     </div>
                 </div>
 
@@ -66,8 +72,6 @@
                     </svg>
                 </div>
             </div>
-
-
         </main>
 
         <footer class="footer bg-light">
@@ -84,10 +88,13 @@
                 d3.select("#namespaces")
                     .on('change',onchange)
                     .selectAll("option")
-                    .data(data)
+                    .data(data, function(d) { return d.namespace})
                     .enter()
                     .append("option")
-                    .text(function (d) { return d; })
+                    .attr("value", function(d) {
+                        return d.namespace;
+                    })
+                    .text(function (d) { return d.label; })
                     .exit().remove();
 
                 function onchange() {
@@ -106,11 +113,27 @@
         function redrawGraph(namespace) {
             d3.select("svg").selectAll("*").remove();
             d3.select("#info").selectAll("*").remove();
+            d3.select("#graph-label").selectAll("*").remove();
+            d3.select("#graph-description").selectAll("*").remove();
 
             // Load data
             // d3.json("https://gist.githubusercontent.com/mbostock/4062045/raw/5916d145c8c048a6e3086915a6be464467391c62/miserables.json")
             d3.json("http://localhost:8080/rest/graphs/" + namespace)
                 .then(function(data) {
+                    // Add general graph info
+                    d3.select("#graph-label")
+                        .append("span")
+                        .text(function() {
+                            return data.label;
+                        });
+                    d3.select("#graph-description")
+                        .append("span")
+                        .text(function() {
+                            return data.description;
+                        });
+
+
+                    // Draw Graph
                     const links = data.edges.map(d => Object.create(d));
                     const nodes = data.vertices.map(d => Object.create(d));
                     const height = 512;

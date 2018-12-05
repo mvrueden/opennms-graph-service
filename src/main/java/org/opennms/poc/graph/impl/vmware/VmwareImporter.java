@@ -41,6 +41,7 @@ import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.generic.GenericGraph;
+import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.persistence.GraphRepository;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
@@ -134,7 +135,9 @@ public class VmwareImporter implements GraphProvider<VmwareVertex, VmwareEdge>  
 
     @Override
     public GraphInfo getGraphInfo() {
-        return graph; // TODO MVR NPE...
+        return new DefaultGraphInfo(NAMESPACE)
+                .withLabel("VMware")
+                .withDescription("Displays the infrastructure information gathered by the VMware Provisioning process.");
     }
 
     private void iterateHostSystems(final Graph graph, VmwareViJavaAccess vmwareViJavaAccess) throws RemoteException {

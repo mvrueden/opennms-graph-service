@@ -39,6 +39,7 @@ import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.opennms.poc.graph.api.listener.GraphChangeSetListener;
@@ -70,7 +71,9 @@ public class PartialGraphListener implements GraphChangeSetListener<Vertex, Edge
 
     @Override
     public GraphInfo getGraphInfo() {
-        return graph;
+        return new DefaultGraphInfo(namespace)
+                .withLabel(namespace)
+                .withLabel("Displays vertices of " + namespace);
     }
 
     @Override

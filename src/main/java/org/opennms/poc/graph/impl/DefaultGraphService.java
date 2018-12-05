@@ -40,6 +40,7 @@ import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.opennms.poc.graph.api.listener.GraphChangeSetListener;
 import org.opennms.poc.graph.impl.change.ChangeSet;
@@ -114,8 +115,8 @@ public class DefaultGraphService implements GraphService {
     }
 
     @Override
-    public List<Graph> getGraphs() {
-        final List<Graph> collect = providers.stream().map(GraphProvider::getGraph).collect(Collectors.toList());
+    public List<GraphInfo> getGraphDetails() {
+        final List<GraphInfo> collect = providers.stream().map(GraphProvider::getGraphInfo).collect(Collectors.toList());
         return collect;
     }
 

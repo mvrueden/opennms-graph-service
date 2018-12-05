@@ -30,9 +30,12 @@ package org.opennms.poc.graph.api;
 
 import java.util.List;
 
+import org.opennms.poc.graph.api.info.GraphInfo;
+
 public interface GraphService extends GraphNotificationService {
 
-    List<Graph> getGraphs();
+    // TODO MVR we should probably not allow this, as this will load ALL graphs internall and will be very heavy initially
+    List<GraphInfo> getGraphDetails();
 
     <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace);
 
