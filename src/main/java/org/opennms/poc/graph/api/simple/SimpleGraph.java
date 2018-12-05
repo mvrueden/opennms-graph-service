@@ -180,4 +180,8 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
         return graph;
     }
 
+    @Override
+    public String toString() {
+        return asGenericGraph().toString();
+    }
 }

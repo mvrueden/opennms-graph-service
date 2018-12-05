@@ -105,4 +105,9 @@ public class SimpleEdge<V extends SimpleVertex> implements Edge<V> {
         }
         return genericEdge;
     }
+
+    @Override
+    public String toString() {
+        return asGenericEdge().toString();
+    }
 }

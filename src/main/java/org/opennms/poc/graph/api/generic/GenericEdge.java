@@ -33,6 +33,8 @@ import java.util.Objects;
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Vertex;
 
+import com.google.common.base.MoreObjects;
+
 // TODO MVR the edge does not have a namespace
 public class GenericEdge extends AbstractElement implements Edge<GenericVertex> {
     private final GenericVertex source;
@@ -79,5 +81,15 @@ public class GenericEdge extends AbstractElement implements Edge<GenericVertex> 
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), source, target);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("properties", properties)
+                .add("computedProperties", computedProperties)
+                .add("source", source == null ? null : source.getId())
+                .add("target", target == null ? null : target.getId())
+                .toString();
     }
 }

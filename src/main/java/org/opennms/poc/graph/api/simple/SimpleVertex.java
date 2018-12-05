@@ -95,4 +95,9 @@ public class SimpleVertex implements Vertex {
         }
         return vertex;
     }
+
+    @Override
+    public String toString() {
+        return asGenericVertex().toString();
+    }
 }
