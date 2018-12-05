@@ -33,16 +33,16 @@ import java.util.List;
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Vertex;
 
-public interface GraphChangeListener {
-    void handleVerticesAdded(List<Vertex> verticesAdded);
+public interface GraphChangeListener<V extends Vertex, E extends Edge<V>> {
+    void handleVerticesAdded(List<V> verticesAdded);
 
-    void handleVerticesRemoved(List<Vertex> verticesRemoved);
+    void handleVerticesRemoved(List<V> verticesRemoved);
 
-    void handleVerticesUpdated(List<Vertex> verticesUpdated);
+    void handleVerticesUpdated(List<V> verticesUpdated);
 
-    void handleEdgesAdded(List<Edge<Vertex>> edgesAdded);
+    void handleEdgesAdded(List<E> edgesAdded);
 
-    void handleEdgesUpdated(List<Edge<Vertex>> edgesUpdated);
+    void handleEdgesUpdated(List<E> edgesUpdated);
 
-    void handleEdgesRemoved(List<Edge<Vertex>> edgesRemoved);
+    void handleEdgesRemoved(List<E> edgesRemoved);
 }

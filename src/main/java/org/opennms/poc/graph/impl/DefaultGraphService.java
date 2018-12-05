@@ -29,10 +29,8 @@
 package org.opennms.poc.graph.impl;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -43,6 +41,7 @@ import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.listener.GraphChangeListener;
+import org.opennms.poc.graph.api.listener.GraphChangeSetListener;
 import org.opennms.poc.graph.impl.change.ChangeSet;
 import org.springframework.stereotype.Service;
 
@@ -50,79 +49,83 @@ import org.springframework.stereotype.Service;
 @Service
 public class DefaultGraphService implements GraphService {
 
-    private class Namespace {
-
-        private final String namespace;
-
-        public Namespace(String namespace) {
-            this.namespace = Objects.requireNonNull(namespace);
-        }
-
-        public boolean matches(String input) {
-            return namespace.equals("*") || namespace.equalsIgnoreCase(input);
-        }
-    }
-
-    private class GraphListenerEntity {
+    private class Entity<T> {
         private Namespace namespace;
-        private GraphChangeListener listener;
+        private T listener;
     }
 
-    private class GraphProviderEntity {
-        private Namespace namespace;
-        private GraphProvider provider;
-    }
+    private List<GraphProvider> providers = new ArrayList<>();
 
-    private List<GraphProviderEntity> providers = new ArrayList<>();
-
-    private List<GraphListenerEntity> listeners = new ArrayList<>();
+    private List<Entity<GraphChangeSetListener<?, ?>>> graphChangeSetListenerEntities = new ArrayList<>();
+    private List<Entity<GraphChangeListener<?, ?>>> graphChangeListenerEntities = new ArrayList<>();
 
     public void onBind(GraphChangeListener listener, Map properties) {
-        final GraphListenerEntity entity = new GraphListenerEntity();
+        final Entity<GraphChangeListener<?, ?>> entity = new Entity();
         entity.listener = listener;
         entity.namespace = new Namespace((String) properties.getOrDefault("namespace", "*"));
-        listeners.add(entity);
+        graphChangeListenerEntities.add(entity);
     }
 
     public void onUnbind(GraphChangeListener listener, Map properties) {
-        listeners.removeAll(
-                listeners.stream().filter(e -> e.listener == listener).collect(Collectors.toList())
+        graphChangeListenerEntities.removeAll(
+                graphChangeListenerEntities.stream().filter(e -> e.listener == listener).collect(Collectors.toList())
         );
     }
 
+    public void onBind(GraphChangeSetListener listener, Map properties) {
+        final Entity<GraphChangeSetListener<?, ?>> entity = new Entity();
+        entity.listener = listener;
+        entity.namespace = new Namespace((String) properties.getOrDefault("namespace", "*"));
+        graphChangeSetListenerEntities.add(entity);
+    }
+
+    public void onUnbind(GraphChangeSetListener listener, Map properties) {
+        graphChangeSetListenerEntities.removeAll(
+                graphChangeSetListenerEntities.stream().filter(e -> e.listener == listener).collect(Collectors.toList())
+        );
+    }
+
+
     // OSGi-Hook
     public void onBind(GraphProvider provider, Map properties) {
-        final GraphProviderEntity entity = new GraphProviderEntity();
-        entity.provider = provider;
-        entity.namespace = new Namespace((String) properties.getOrDefault("namespace", "*"));
         provider.setNotificationService(this);
-        providers.add(entity);
+        providers.add(provider);
+        // TODO MVR this will probably not really work in osgi-context
         if (provider instanceof GraphChangeListener) {
             onBind((GraphChangeListener) provider, properties);
+        }
+        // TODO MVR this will probably not really work in osgi-context
+        if (provider instanceof GraphChangeSetListener) {
+            onBind((GraphChangeSetListener) provider, properties);
         }
     }
 
     // OSGi-Hook
     public void onUnbind(GraphProvider provider, Map properties) {
-        final List<GraphProviderEntity> removeMe = providers.stream().filter(e -> e.provider == provider).collect(Collectors.toList());
-        removeMe.forEach(e -> providers.remove(e));
+        providers.remove(provider);
+        // TODO MVR this will probably not really work in osgi-context
+        if (provider instanceof GraphChangeListener) {
+            onUnbind((GraphChangeListener) provider, properties);
+        }
+        // TODO MVR this will probably not really work in osgi-context
+        if (provider instanceof GraphChangeSetListener) {
+            onUnbind((GraphChangeSetListener) provider, properties);
+        }
     }
 
     @Override
     public List<Graph> getGraphs() {
-        final List<Graph> collect = providers.stream().map(e -> e.provider.getGraph())
-                .collect(Collectors.toList());
+        final List<Graph> collect = providers.stream().map(GraphProvider::getGraph).collect(Collectors.toList());
         return collect;
     }
 
     @Override
     public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace) {
-        final Optional<GraphProviderEntity> first = providers.stream()
-                .filter(p -> p.provider.getGraphInfo() != null
-                                && namespace.equals(p.provider.getGraphInfo().getNamespace()))
+        final Optional<GraphProvider> first = providers.stream()
+                .filter(provider -> provider.getGraphInfo() != null && namespace.equals(provider.getGraphInfo().getNamespace()))
                 .findFirst();
         if (first.isPresent()) {
-            return first.get().provider.getGraph();
+            return first.get().getGraph();
         }
         return null;
     }
@@ -139,39 +142,32 @@ public class DefaultGraphService implements GraphService {
         }
 
         // Detect changes
-        final String namespace = oldGraph != null ? oldGraph.getNamespace() : newGraph.getNamespace();
-        final ChangeSet<Vertex, Edge<Vertex>> changeSet = new ChangeSet(namespace, new Date()); // TODO MVR in my opinion this should be automatically detected from the graphs
-        changeSet.detectChanges(oldGraph, newGraph);
+        final ChangeSet<Vertex, Edge<Vertex>> changeSet = new ChangeSet(oldGraph, newGraph);
+        graphChanged(changeSet);
+    }
 
-        if (changeSet.hasChanges()) {
+    @Override
+    public void graphChanged(ChangeSet changeSet) {
+        if (changeSet != null && changeSet.hasChanges()) {
             // Send them out
-            final List<GraphChangeListener> listeners = getListeners(changeSet.getNamespace());
-            for (GraphChangeListener listener : listeners) {
-                // TODO MVR maybe we can just call listener.graphChanged(changeSet) instead?
-                if (changeSet.getVerticesAdded().isEmpty()) {
-                    listener.handleVerticesAdded(changeSet.getVerticesAdded());
-                }
-                if (changeSet.getVerticesRemoved().isEmpty()) {
-                    listener.handleVerticesRemoved(changeSet.getVerticesRemoved());
-                }
-                if (changeSet.getVerticesUpdated().isEmpty()) {
-                    listener.handleVerticesUpdated(changeSet.getVerticesUpdated());
-                }
-                if (changeSet.getEdgesAdded().isEmpty()) {
-                    listener.handleEdgesAdded(changeSet.getEdgesAdded());
-                }
-                if (changeSet.getEdgesUpdated().isEmpty()) {
-                    listener.handleEdgesUpdated(changeSet.getEdgesUpdated());
-                }
-                if (changeSet.getEdgesRemoved().isEmpty()) {
-                    listener.handleEdgesRemoved(changeSet.getEdgesRemoved());
-                }
+            for (GraphChangeListener listener : getChangeListeners(changeSet.getNamespace())) {
+                changeSet.accept(listener);
+            }
+            for (GraphChangeSetListener listener : getChangeSetListeners(changeSet.getNamespace())) {
+                changeSet.accept(listener);
             }
         }
     }
 
-    private List<GraphChangeListener> getListeners(String namespace) {
-        return listeners.stream()
+    private List<GraphChangeSetListener> getChangeSetListeners(final String namespace) {
+        return graphChangeSetListenerEntities.stream()
+                .filter(entity -> entity.namespace.matches(namespace))
+                .map(entity -> entity.listener)
+                .collect(Collectors.toList());
+    }
+
+    private List<GraphChangeListener> getChangeListeners(String namespace) {
+        return graphChangeListenerEntities.stream()
                 .filter(entity -> entity.namespace.matches(namespace))
                 .map(entity -> entity.listener)
                 .collect(Collectors.toList());

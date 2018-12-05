@@ -29,7 +29,6 @@
 package org.opennms.poc.graph.impl.persistence;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,8 +104,7 @@ public class DefaultGraphRepository implements GraphRepository {
         if (persistedGraph == null) {
             accessor.save(graphEntity);
         } else {
-            final ChangeSet<GenericVertex, GenericEdge> changeSet = new ChangeSet<>(graph.getNamespace(), new Date());
-            changeSet.detectChanges(persistedGraph, genericGraph);
+            final ChangeSet<GenericVertex, GenericEdge> changeSet = new ChangeSet<>(persistedGraph, genericGraph);
             if (changeSet.hasChanges()) {
                 changeSet.getEdgesRemoved().forEach(edge -> persistedGraph.removeEdge(edge));
                 changeSet.getEdgesAdded().forEach(edge -> persistedGraph.addEdge(edge));

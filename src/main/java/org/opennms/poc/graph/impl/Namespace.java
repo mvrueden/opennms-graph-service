@@ -26,13 +26,19 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.impl;
 
-import org.opennms.poc.graph.impl.change.ChangeSet;
+import java.util.Objects;
 
-public interface GraphNotificationService {
+public class Namespace {
 
-    void graphChanged(Graph oldGraph, Graph newGraph);
+    private final String namespace;
 
-    void graphChanged(ChangeSet changeSet);
+    public Namespace(String namespace) {
+        this.namespace = Objects.requireNonNull(namespace);
+    }
+
+    public boolean matches(String input) {
+        return namespace.equals("*") || namespace.equalsIgnoreCase(input);
+    }
 }

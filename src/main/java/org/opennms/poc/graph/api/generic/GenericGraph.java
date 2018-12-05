@@ -48,6 +48,10 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
 
     public GenericGraph() {}
 
+    public GenericGraph(String namespace) {
+        setNamespace(namespace);
+    }
+
     public GenericGraph(Map<String, Object> properties) {
         setProperties(properties);
     }
@@ -110,6 +114,7 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     public void addVertex(GenericVertex vertex) {
         Objects.requireNonNull(vertex);
         Objects.requireNonNull(vertex.getId());
+        if (vertices.contains(vertex)) return; // already added
         vertexToIdMap.put(vertex.getId(), vertex);
         vertices.add(vertex);
     }
@@ -118,6 +123,7 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     public void addEdge(GenericEdge edge) {
         Objects.requireNonNull(edge);
         Objects.requireNonNull(edge.getId());
+        if (edges.contains(edge)) return; // already added
         if (edge.getSource().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getSource().getId()) == null) {
             addVertex(edge.getSource());
         }
@@ -133,6 +139,7 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
         Objects.requireNonNull(edge);
         edgeToIdMap.remove(edge.getId());
         edges.remove(edge);
+        // TODO MVR remove vertices as well?
     }
 
     @Override

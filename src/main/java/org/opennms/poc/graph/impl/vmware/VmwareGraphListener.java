@@ -43,7 +43,7 @@ import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class VmwareGraphListener implements GraphChangeListener, GraphProvider {
+public class VmwareGraphListener implements GraphChangeListener<Vertex, Edge<Vertex>>, GraphProvider {
 
     private final static Logger LOG = LoggerFactory.getLogger(VmwareGraphListener.class);
     private GenericGraph graph;

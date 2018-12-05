@@ -26,13 +26,13 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.listener;
 
+import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.impl.change.ChangeSet;
 
-public interface GraphNotificationService {
+public interface GraphChangeSetListener<V extends Vertex, E extends Edge<V>> {
 
-    void graphChanged(Graph oldGraph, Graph newGraph);
-
-    void graphChanged(ChangeSet changeSet);
+    void graphChanged(ChangeSet<V, E> changeSet);
 }

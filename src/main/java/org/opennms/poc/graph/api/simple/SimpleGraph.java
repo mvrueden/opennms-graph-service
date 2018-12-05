@@ -114,6 +114,7 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     public void addVertex(V vertex) {
         Objects.requireNonNull(vertex);
         Objects.requireNonNull(vertex.getId());
+        if (vertices.contains(vertex)) return; // already added
         vertexToIdMap.put(vertex.getId(), vertex);
         vertices.add(vertex);
     }
@@ -122,6 +123,7 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     public void addEdge(E edge) {
         Objects.requireNonNull(edge);
         Objects.requireNonNull(edge.getId());
+        if (edges.contains(edge)) return; // already added
         if (edge.getSource().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getSource().getId()) == null) {
             addVertex(edge.getSource());
         }

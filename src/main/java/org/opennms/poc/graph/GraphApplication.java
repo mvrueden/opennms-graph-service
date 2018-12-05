@@ -1,5 +1,7 @@
 package org.opennms.poc.graph;
 
+import static org.opennms.poc.graph.impl.partial.PartialGraphUpdater.NAMESPACE;
+
 import java.util.HashMap;
 
 import org.opennms.features.graphml.model.InvalidGraphException;
@@ -9,6 +11,7 @@ import org.opennms.poc.graph.impl.DefaultGraphService;
 import org.opennms.poc.graph.impl.GraphmlProvider;
 import org.opennms.poc.graph.impl.bsm.BsmGraphProvider;
 import org.opennms.poc.graph.impl.nodes.NodeGraphProvider;
+import org.opennms.poc.graph.impl.partial.PartialGraphListener;
 import org.opennms.poc.graph.impl.vmware.VmwareGraphListener;
 import org.opennms.poc.graph.impl.vmware.VmwareImporter;
 import org.slf4j.Logger;
@@ -55,6 +58,7 @@ public class GraphApplication {
 		graphService.onBind(vmwareImporter, new HashMap<>());
 		graphService.onBind(bsmGraphProvider, new HashMap());
 		graphService.onBind(nodeGraphProvider, new HashMap<>());
+		graphService.onBind((GraphProvider) new PartialGraphListener(NAMESPACE), new HashMap<>());
 //		graphService.onBind(event -> {
 //			LOG.info("New event of type {} received.", event.getType());
 ////			final Graph g = graphService.getGraph(NAMESPACE);

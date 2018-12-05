@@ -36,10 +36,12 @@ import java.util.Objects;
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.listener.GraphChangeListener;
+import org.opennms.poc.graph.api.listener.GraphChangeSetListener;
 
 public class ChangeSet<V extends Vertex, E extends Edge<V>> {
     private final String namespace;
-    private final Date changeDate;
+    private final Date changeSetDate;
     private List<V> verticesAdded = new ArrayList<>();
     private List<V> verticesRemoved = new ArrayList<>();
     private List<V> verticesUpdated = new ArrayList<>();
@@ -49,33 +51,52 @@ public class ChangeSet<V extends Vertex, E extends Edge<V>> {
 
     private boolean graphInfoChanged;
 
-    public ChangeSet(String namespace, Date changeDate) {
-        this.namespace = Objects.requireNonNull(namespace);
-        this.changeDate = Objects.requireNonNull(changeDate);
+    public ChangeSet(String namespace) {
+        this.namespace = namespace;
+        this.changeSetDate = new Date();
     }
 
-    public void vertexAdded(V vertex) {
+    public ChangeSet(Graph<V, E> oldGraph, Graph<V, E> newGraph) {
+        this(oldGraph, newGraph, new Date());
+    }
+
+    public ChangeSet(Graph<V, E> oldGraph, Graph<V, E> newGraph, Date changeSetDate) {
+        this.changeSetDate = Objects.requireNonNull(changeSetDate);
+        if (oldGraph == null && newGraph == null) {
+            throw new IllegalArgumentException("Cannot detect changes if both graphs are null.");
+        }
+        this.namespace = oldGraph == null ? newGraph.getNamespace() : oldGraph.getNamespace();
+        detectChanges(oldGraph, newGraph);
+    }
+
+    public ChangeSet vertexAdded(V vertex) {
         verticesAdded.add(vertex);
+        return this;
     }
 
-    public void vertexRemoved(V vertex) {
+    public ChangeSet vertexRemoved(V vertex) {
         verticesRemoved.add(vertex);
+        return this;
     }
 
-    public void vertexUpdated(V vertex) {
+    public ChangeSet vertexUpdated(V vertex) {
         verticesUpdated.add(vertex);
+        return this;
     }
 
-    public void edgeAdded(E edge) {
+    public ChangeSet edgeAdded(E edge) {
         edgesAdded.add(edge);
+        return this;
     }
 
-    public void edgeRemoved(E edge) {
+    public ChangeSet edgeRemoved(E edge) {
         edgesRemoved.add(edge);
+        return this;
     }
 
-    public void edgeUpdated(E edge) {
+    public ChangeSet edgeUpdated(E edge) {
         edgesUpdated.add(edge);
+        return this;
     }
 
     public void graphInfoChanged(boolean infoChanged) {
@@ -86,8 +107,8 @@ public class ChangeSet<V extends Vertex, E extends Edge<V>> {
         return namespace;
     }
 
-    public Date getChangeDate() {
-        return changeDate;
+    public Date getChangeSetDate() {
+        return changeSetDate;
     }
 
     public List<V> getVerticesAdded() {
@@ -118,25 +139,6 @@ public class ChangeSet<V extends Vertex, E extends Edge<V>> {
         return graphInfoChanged;
     }
 
-    public void detectChanges(Graph<V, E> oldGraph, Graph<V, E> newGraph) {
-        if (oldGraph == null && newGraph == null) return;
-        if (oldGraph == null && newGraph != null) {
-            newGraph.getVertices().forEach(v -> vertexAdded(v));
-            newGraph.getEdges().forEach(e -> edgeAdded(e));
-        }
-        if (oldGraph != null && newGraph == null) {
-            oldGraph.getVertices().forEach(v -> vertexRemoved(v));
-            oldGraph.getEdges().forEach(e -> edgeRemoved(e));
-        }
-        if (oldGraph != null && newGraph != null) {
-            if (!oldGraph.getNamespace().equalsIgnoreCase(newGraph.getNamespace())) {
-                throw new IllegalStateException("Cannot detect changes between different namespaces");
-            }
-            detectVertexChanges(oldGraph, newGraph);
-            detectEdgeChanges(oldGraph, newGraph);
-        }
-    }
-
     public boolean hasChanges() {
         return hasGraphInfoChanged()
                 || !edgesAdded.isEmpty()
@@ -147,22 +149,77 @@ public class ChangeSet<V extends Vertex, E extends Edge<V>> {
                 || !verticesUpdated.isEmpty();
     }
 
+    public void accept(GraphChangeListener listener) {
+        if (!getVerticesAdded().isEmpty()) {
+            listener.handleVerticesAdded(getVerticesAdded());
+        }
+        if (!getVerticesRemoved().isEmpty()) {
+            listener.handleVerticesRemoved(getVerticesRemoved());
+        }
+        if (!getVerticesUpdated().isEmpty()) {
+            listener.handleVerticesUpdated(getVerticesUpdated());
+        }
+        if (!getEdgesAdded().isEmpty()) {
+            listener.handleEdgesAdded(getEdgesAdded());
+        }
+        if (!getEdgesUpdated().isEmpty()) {
+            listener.handleEdgesUpdated(getEdgesUpdated());
+        }
+        if (!getEdgesRemoved().isEmpty()) {
+            listener.handleEdgesRemoved(getEdgesRemoved());
+        }
+    }
+
+    public void accept(GraphChangeSetListener listener) {
+        if (hasChanges()) {
+            listener.graphChanged(this);
+        }
+    }
+
+    protected void detectChanges(Graph<V, E> oldGraph, Graph<V, E> newGraph) {
+        // no old graph exists, add all
+        if (oldGraph == null && newGraph != null) {
+            newGraph.getVertices().forEach(v -> vertexAdded(v));
+            newGraph.getEdges().forEach(e -> edgeAdded(e));
+        }
+        // no new graph exists, remove all
+        if (oldGraph != null && newGraph == null) {
+            oldGraph.getVertices().forEach(v -> vertexRemoved(v));
+            oldGraph.getEdges().forEach(e -> edgeRemoved(e));
+        }
+        // both graph exists, so calculate changes
+        if (oldGraph != null && newGraph != null) {
+            // Before changes can be calculated, ensure the graphs share the same namespace, otherwise
+            // we should bail, as this is theoretical/technical possible, but does not make sense from the
+            // domain view the namespace reflects.
+            if (!oldGraph.getNamespace().equalsIgnoreCase(newGraph.getNamespace())) {
+                throw new IllegalStateException("Cannot detect changes between different namespaces");
+            }
+            detectVertexChanges(oldGraph, newGraph);
+            detectEdgeChanges(oldGraph, newGraph);
+        }
+    }
+
     protected void detectVertexChanges(Graph<V, E> oldGraph, Graph<V, E> newGraph) {
         // Find all vertices/edges which are in the old and new graph
         final List<String> oldVertexIds = new ArrayList<>(oldGraph.getVertexIds());
         final List<String> newVertexIds = new ArrayList<>(newGraph.getVertexIds());
 
         // Detect removed vertices
+        // A vertex from the old graph is removed if it is no longer part of the new graphs vertex list
         final List<String> removedVertices = new ArrayList<>(oldVertexIds);
         removedVertices.removeAll(newVertexIds);
         removedVertices.forEach(id -> vertexRemoved(oldGraph.getVertex(id)));
 
         // Detect added vertices
+        // A vertex from the new graph is added if it is not part of the old graphs vertex list
         final List<String> addedVertices = new ArrayList<>(newVertexIds);
         addedVertices.removeAll(oldVertexIds);
         addedVertices.forEach(id -> vertexAdded(newGraph.getVertex(id)));
 
         // Detect updated vertices
+        // A vertex is updated if it part of the new and old graph's vertex list
+        // and they are not equal (probably due to properties change)
         final List<String> sharedVertcies = new ArrayList<>(newVertexIds);
         sharedVertcies.removeAll(removedVertices);
         sharedVertcies.removeAll(addedVertices);
