@@ -1,74 +1,151 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>D3 Force-Directed Graph</title>
-<link rel="stylesheet" type="text/css" href="https://unpkg.com/@observablehq/notebook-inspector@1/dist/notebook-inspector-style.css">
-<body>
-<script src="https://d3js.org/d3.v5.js"></script>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="">
+        <meta name="author" content="">
+        <title>D3 Force-Directed Graph</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+        <script src="https://d3js.org/d3.v5.js"></script>
+    </head>
+    <body>
+        <header>
+            <!-- Fixed navbar -->
+            <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+                <a class="navbar-brand" href="#">Fixed navbar</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarCollapse">
+                    <ul class="navbar-nav mr-2">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Link</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link disabled" href="#">Disabled</a>
+                        </li>
+                    </ul>
+                    <div class="navbar-nav mr-auto">
+                        <div class="input-group input-group-sm">
+                            <select id="namespaces" class="custom-select form-control form-control-sm">
+                            </select>
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" onclick="refresh()"><i class="fa fa-refresh"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <form class="form-inline mt-2 mt-md-0">
+                        <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                    </form>
+                </div>
+            </nav>
+        </header>
 
-<script type="application/javascript">
+        <!-- Begin page content -->
+        <main role="main" class="container-fluid" style="padding-top: 60px;">
+            <div class="row">
+                <div class="col-md-2 bg-light">
+                    <span><b>Selection Info</b></span>
+                    <div class="col-2-md" id="info" style="overflow:hidden">
+                        <span class="text-muted">Nothing selected</span>
+                    </div>
+                </div>
 
-    d3.json("http://localhost:8080/rest/graphs")
-        .then(function(data) {
-            console.log(data);
+                <div class="col-md-10">
+                    <svg>
 
-            d3.select("#namespaces")
-                .on('change',onchange)
-                .selectAll("option")
-                .data(data)
-                .enter()
+                    </svg>
+                </div>
+            </div>
+
+
+        </main>
+
+        <footer class="footer bg-light">
+            <div class="container-fluid">
+                <span class="text-muted">Place sticky footer content here.</span>
+            </div>
+        </footer>
+    </body>
+    <script type="application/javascript">
+        d3.json("http://localhost:8080/rest/graphs")
+            .then(function(data) {
+                console.log(data);
+
+                d3.select("#namespaces")
+                    .on('change',onchange)
+                    .selectAll("option")
+                    .data(data)
+                    .enter()
                     .append("option")
                     .text(function (d) { return d; })
-                .exit().remove();
+                    .exit().remove();
 
-            function onchange() {
-                const selectedNamespace = d3.select('#namespaces').property('value')
-                redrawGraph(selectedNamespace);
-            };
-        });
+                function onchange() {
+                    const selectedNamespace = d3.select('#namespaces').property('value')
+                    redrawGraph(selectedNamespace);
+                };
 
-    function redrawGraph(namespace) {
-        d3.select("svg").selectAll("*").remove();
-        d3.select("#info").selectAll("*").remove();
+                onchange();
+            });
 
-        // Load data
-        // d3.json("https://gist.githubusercontent.com/mbostock/4062045/raw/5916d145c8c048a6e3086915a6be464467391c62/miserables.json")
-        d3.json("http://localhost:8080/rest/graphs/" + namespace)
-            .then(function(data) {
-                const links = data.edges.map(d => Object.create(d));
-                const nodes = data.vertices.map(d => Object.create(d));
-                const height = 512;
-                const width = 1024;
-                const scaleColor = d3.scaleOrdinal(d3.schemeCategory10);
+        function refresh() {
+            const namespace = d3.select("#namespaces").property('value');
+            redrawGraph(namespace);
+        }
 
-                const simulation = d3.forceSimulation(nodes)
-                    .force("link", d3.forceLink(links).id(d => d.id))
-                    .force("charge", d3.forceManyBody())
-                    .force("center", d3.forceCenter()).on("tick", ticked);
+        function redrawGraph(namespace) {
+            d3.select("svg").selectAll("*").remove();
+            d3.select("#info").selectAll("*").remove();
 
-                const svg = d3.select("svg")
-                    .attr("viewBox", [-width/2, -height/2, width, height]);
+            // Load data
+            // d3.json("https://gist.githubusercontent.com/mbostock/4062045/raw/5916d145c8c048a6e3086915a6be464467391c62/miserables.json")
+            d3.json("http://localhost:8080/rest/graphs/" + namespace)
+                .then(function(data) {
+                    const links = data.edges.map(d => Object.create(d));
+                    const nodes = data.vertices.map(d => Object.create(d));
+                    const height = 512;
+                    const width = 1024;
+                    const scaleColor = d3.scaleOrdinal(d3.schemeCategory10);
 
-                const link = svg.append("g")
-                    .attr("stroke", "#999")
-                    .attr("stroke-opacity", 0.6)
-                    .selectAll("line")
-                    .data(links)
-                    .enter().append("line")
+                    const simulation = d3.forceSimulation(nodes)
+                        .force("link", d3.forceLink(links).id(d => d.id))
+                        .force("charge", d3.forceManyBody())
+                        .force("center", d3.forceCenter()).on("tick", ticked);
+
+                    const svg = d3.select("svg")
+                        .attr("viewBox", [-width/2, -height/2, width, height]);
+
+                    const link = svg.append("g")
+                        .attr("stroke", "#999")
+                        .attr("stroke-opacity", 0.6)
+                        .selectAll("line")
+                        .data(links)
+                        .enter().append("line")
                         .attr("class", "link")
                         .attr("x1", d => d.source.x)
                         .attr("y1", d => d.source.y)
                         .attr("x2", d => d.target.x)
                         .attr("y2", d => d.target.y)
                         .attr("stroke-width", d => d.value ? Math.sqrt(d.value) : 1)
-                    .exit().remove()
-                ;
+                        .exit().remove()
+                    ;
 
-                const node = svg.append("g")
-                    .attr("stroke", "#fff")
-                    .attr("stroke-width", 1.5)
-                    .selectAll("circle")
-                    .data(nodes)
-                    .enter().append("circle")
+                    const node = svg.append("g")
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 1.5)
+                        .selectAll("circle")
+                        .data(nodes)
+                        .enter().append("circle")
                         .attr("class", "node")
                         .attr("r", 5)
                         .attr("fill", function(d) {
@@ -79,15 +156,15 @@
                             console.log("clicked " + d.id, d);
                             d3.select("#info").selectAll("*").remove();
                             d3.select("#info")
-                                .append("div")
+                                .append("pre")
                                 .text(function() {
                                     // Flatten as prototype properties etc are missing
                                     var result = Object.create(d);
                                     for(var key in result) {
                                         result[key] = result[key];
                                     }
-                                    console.log(JSON.stringify(result));
-                                    return JSON.stringify(result);
+                                    console.log(JSON.stringify(result, null, 2));
+                                    return JSON.stringify(result, null, 2);
                                 });
                         })
                         .call(
@@ -108,30 +185,24 @@
                                 })
                         )
                         .append("title").text(d => d.id)
-                    .exit().remove();
-                ;
+                        .exit().remove();
+                    ;
 
-                function ticked() {
-                    d3.selectAll(".link")
-                        .attr("x1", d => d.source.x ? d.source.x : 0)
-                        .attr("y1", d => d.source.y ? d.source.y : 30)
-                        .attr("x2", d => d.target.x ? d.target.x : -30)
-                        .attr("y2", d => d.target.y ? d.target.y : 30);
+                    function ticked() {
+                        d3.selectAll(".link")
+                            .attr("x1", d => d.source.x ? d.source.x : 0)
+                            .attr("y1", d => d.source.y ? d.source.y : 30)
+                            .attr("x2", d => d.target.x ? d.target.x : -30)
+                            .attr("y2", d => d.target.y ? d.target.y : 30);
 
-                    d3.selectAll(".node")
-                        .attr("cx", d => d.x)
-                        .attr("cy", d => d.y);
-                }
-            });
+                        d3.selectAll(".node")
+                            .attr("cx", d => d.x)
+                            .attr("cy", d => d.y);
+                    }
+                });
 
-    }
+        }
 
-</script>
-<div>
-    <select id="namespaces">
-    </select>
-</div>
-<div id="info">
+    </script>
 
-</div>
-<svg></svg>
+</html>
