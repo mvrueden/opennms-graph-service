@@ -129,7 +129,7 @@ public class VmwareImporter implements GraphProvider<VmwareVertex, VmwareEdge>  
     }
 
     @Override
-    public Graph getGraph() {
+    public Graph loadGraph() {
         return graph;
     }
 

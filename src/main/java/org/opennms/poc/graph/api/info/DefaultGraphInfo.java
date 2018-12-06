@@ -30,6 +30,8 @@ package org.opennms.poc.graph.api.info;
 
 import java.util.Objects;
 
+import com.google.common.base.MoreObjects;
+
 public class DefaultGraphInfo implements GraphInfo {
 
     private String namespace;
@@ -75,5 +77,14 @@ public class DefaultGraphInfo implements GraphInfo {
     public DefaultGraphInfo withDescription(String description) {
         setDescription(description);
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("namespace", namespace)
+                .add("label", label)
+                .add("description", description)
+                .toString();
     }
 }

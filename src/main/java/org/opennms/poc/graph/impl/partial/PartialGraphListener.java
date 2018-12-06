@@ -65,7 +65,7 @@ public class PartialGraphListener implements GraphChangeSetListener<Vertex, Edge
     }
 
     @Override
-    public Graph getGraph() {
+    public Graph loadGraph() {
         return graph;
     }
 

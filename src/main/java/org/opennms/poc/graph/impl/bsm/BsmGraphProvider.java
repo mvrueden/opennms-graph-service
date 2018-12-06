@@ -65,7 +65,7 @@ public class BsmGraphProvider implements GraphProvider, BusinessServiceStateChan
     }
 
     @Override
-    public Graph getGraph() {
+    public Graph loadGraph() {
         final BusinessServiceGraph sourceGraph = serviceManager.getGraph();
         final SimpleGraph<AbstractVertex, BusinessServiceEdge<AbstractVertex>> targetGraph = new SimpleGraph<>(NAMESPACE);
         for (GraphVertex topLevelBusinessService : sourceGraph.getVerticesByLevel(0)) {

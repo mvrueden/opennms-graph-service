@@ -26,56 +26,44 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl.nodes;
+package org.opennms.poc.graph.impl.slow;
 
-import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.generic.GenericGraph;
-import org.opennms.poc.graph.api.generic.GenericProperties;
-import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.opennms.poc.graph.api.simple.SimpleEdge;
+import org.opennms.poc.graph.api.simple.SimpleGraph;
+import org.opennms.poc.graph.api.simple.SimpleVertex;
+import org.springframework.stereotype.Service;
 
-// Dummy GraphProvider, which shows all nodes.
-// Required to simulate Node Enrichment
-@Component
-public class NodeGraphProvider implements GraphProvider {
+import com.google.common.base.Throwables;
 
-    private static final String NAMESPACE = "nodes";
-
-    @Autowired
-    private NodeDao nodeDao;
-
+@Service
+public class SlowGraphProvider implements GraphProvider<SimpleVertex, SimpleEdge<SimpleVertex>> {
     @Override
     public void setNotificationService(GraphNotificationService notificationService) {
 
     }
 
-    public Graph loadGraph() {
-        final GenericGraph graph = new GenericGraph();
-        graph.setNamespace(NAMESPACE);
+    @Override
+    public Graph<SimpleVertex, SimpleEdge<SimpleVertex>> loadGraph() {
+        try {
+            Thread.sleep(30 * 1000);
 
-        nodeDao.findAll().forEach(n -> {
-            final GenericVertex v = new GenericVertex();
-            v.setProperty(GenericProperties.NODE_ID, n.getId());
-            v.setNamespace(NAMESPACE);
-            v.setId("" + n.getId());
-
-            graph.addVertex(v);
-        });
-
-        return graph;
+            final SimpleGraph<SimpleVertex, SimpleEdge<SimpleVertex>> graph = new SimpleGraph<>("slow");
+            graph.applyInfo(getGraphInfo());
+            graph.addVertex(new SimpleVertex("slow", "v1"));
+            graph.addVertex(new SimpleVertex("slow", "v2"));
+            return graph;
+        } catch (InterruptedException ex) {
+            throw Throwables.propagate(ex);
+        }
     }
 
     @Override
     public GraphInfo getGraphInfo() {
-        return new DefaultGraphInfo(NAMESPACE)
-                .withLabel("Nodes")
-                .withDescription("Visualizes all nodes (Later this will be enlind topology)");
+        return new DefaultGraphInfo("slow").withLabel("Slow").withDescription("Graph simulating a very slow loading time of 30 seconds");
     }
-
 }

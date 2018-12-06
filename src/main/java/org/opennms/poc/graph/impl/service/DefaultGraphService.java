@@ -26,13 +26,18 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl;
+package org.opennms.poc.graph.impl.service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import javax.annotation.PreDestroy;
 
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
@@ -44,21 +49,30 @@ import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.opennms.poc.graph.api.listener.GraphChangeSetListener;
 import org.opennms.poc.graph.impl.change.ChangeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 // How would this listen to events in the first place?
 @Service
 public class DefaultGraphService implements GraphService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultGraphService.class);
+
     private class Entity<T> {
         private Namespace namespace;
         private T listener;
     }
 
-    private List<GraphProvider> providers = new ArrayList<>();
-
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private List<GraphHandle> providers = new ArrayList<>();
     private List<Entity<GraphChangeSetListener<?, ?>>> graphChangeSetListenerEntities = new ArrayList<>();
     private List<Entity<GraphChangeListener<?, ?>>> graphChangeListenerEntities = new ArrayList<>();
+
+    @PreDestroy
+    public void preDestroy() {
+        executorService.shutdown(); // TODO MVR do we really want to wait for completion of jobs before shutting down?!
+    }
 
     public void onBind(GraphChangeListener listener, Map properties) {
         final Entity<GraphChangeListener<?, ?>> entity = new Entity();
@@ -86,11 +100,16 @@ public class DefaultGraphService implements GraphService {
         );
     }
 
-
     // OSGi-Hook
     public void onBind(GraphProvider provider, Map properties) {
-        provider.setNotificationService(this);
-        providers.add(provider);
+        Objects.requireNonNull(provider);
+        LOG.info("New GraphProvider registered {}", provider.getGraphInfo());
+
+        final GraphHandle graphHandle = new GraphHandle(executorService, provider);
+        graphHandle.setNotificationService(this);
+        providers.add(graphHandle);
+        graphHandle.initialize();
+
         // TODO MVR this will probably not really work in osgi-context
         if (provider instanceof GraphChangeListener) {
             onBind((GraphChangeListener) provider, properties);
@@ -103,6 +122,7 @@ public class DefaultGraphService implements GraphService {
 
     // OSGi-Hook
     public void onUnbind(GraphProvider provider, Map properties) {
+        // TODO MVR here we should probably remove the handle instead of the provider...
         providers.remove(provider);
         // TODO MVR this will probably not really work in osgi-context
         if (provider instanceof GraphChangeListener) {
@@ -116,17 +136,21 @@ public class DefaultGraphService implements GraphService {
 
     @Override
     public List<GraphInfo> getGraphDetails() {
-        final List<GraphInfo> collect = providers.stream().map(GraphProvider::getGraphInfo).collect(Collectors.toList());
+        final List<GraphInfo> collect = providers.stream()
+                .filter(GraphHandle::isReady)
+                .map(GraphProvider::getGraphInfo)
+                .collect(Collectors.toList());
         return collect;
     }
 
     @Override
     public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace) {
-        final Optional<GraphProvider> first = providers.stream()
+        final Optional<GraphHandle> first = providers.stream()
+                .filter(GraphHandle::isReady)
                 .filter(provider -> provider.getGraphInfo() != null && namespace.equals(provider.getGraphInfo().getNamespace()))
                 .findFirst();
         if (first.isPresent()) {
-            return first.get().getGraph();
+            return first.get().loadGraph();
         }
         return null;
     }

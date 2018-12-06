@@ -104,7 +104,7 @@ public class VmwareGraphListener implements GraphChangeListener<Vertex, Edge<Ver
     }
 
     @Override
-    public Graph getGraph() {
+    public Graph loadGraph() {
         return graph;
     }
 

@@ -26,7 +26,7 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl;
+package org.opennms.poc.graph.impl.service;
 
 import java.util.Objects;
 

@@ -32,12 +32,35 @@ import org.opennms.poc.graph.api.info.GraphInfo;
 
 // TODO MVR the provider must provide information such as namespace, label, descriptin, etc. even if the graph itself is not loaded yet.
 // TODO MVR the graph provider should probably return multiple graphs (e.g. graphml)
+
+/**
+ * @author mvrueden
+ * @param <V>
+ * @param <E>
+ */
 public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
 
+    /**
+     * The provider may need to inform about graph changes.
+     * Whith this method the {@link GraphNotificationService} is passed to the provider.
+     * @param notificationService
+     */
     void setNotificationService(GraphNotificationService notificationService);
 
-    Graph<V, E> getGraph();
+    /**
+     * Loads the graph, this {@link GraphProvider} handles.
+     * Loading may be performed very quickly, but also may take some time.
+     *
+     * @return
+     */
+    Graph<V, E> loadGraph();
 
-    // TODO MVR this is weird... because it is only required for label, description and namespace, when the graph is not yet ready
+    /**
+     * The {@link GraphInfo} should be used to provide details of the graph's nature, e.g. the namespace, label or description
+     * A {@link Graph} should also embed this information. The difference is, that the info should always be available,
+     * even if the graph is not yet loaded, and should also never change during the provider's live time, whereas the
+     * graph itself may change (e.g. different vertices/edges and properties (besides the ones defining the info)).
+     * @return
+     */
     GraphInfo getGraphInfo();
 }

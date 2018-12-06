@@ -95,7 +95,7 @@ public class GraphmlProvider implements GraphProvider<GenericVertex, GenericEdge
     }
 
     @Override
-    public Graph getGraph() {
+    public Graph loadGraph() {
         return graph;
     }
 
