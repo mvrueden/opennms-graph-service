@@ -26,14 +26,18 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.enrichment;
+package org.opennms.poc.graph.impl.enrichment;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.enrichment.Enrichment;
+import org.springframework.stereotype.Service;
 
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Constant {
+// TODO MVR enrichment vs computation
+@Service
+public class NodeSeverityEnrichment implements Enrichment<NodeSeverity> {
 
-    String name();
-    String value();
+    @Override
+    public NodeSeverity compute(Vertex vertex) {
+        return NodeSeverity.Major;
+    }
 }

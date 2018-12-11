@@ -26,18 +26,21 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl.enrichment;
+package org.opennms.poc.graph.api.enrichment;
 
-import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.enrichment.Compution;
-import org.springframework.stereotype.Service;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-// TODO MVR enrichment vs computation
-@Service
-public class NodeSeverityComputation implements Compution<NodeSeverity> {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
+public @interface Enriched {
 
-    @Override
-    public NodeSeverity compute(Vertex vertex) {
-        return NodeSeverity.Major;
-    }
+    // The name of the field, when converting to a GenericVertex/Edge/Graph
+    String name();
+
+    // Optionally provide an enrichment implementation. By default all EnrichmentProcessors which can handle the provided namespace and return a
+    // type of the field which is enriched is used. If multiple processors match, the first one is used
+    Class<? extends Enrichment> enrichment();
 }

@@ -35,7 +35,7 @@ import java.lang.reflect.Modifier;
 
 import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.enrichment.Compution;
+import org.opennms.poc.graph.api.enrichment.Enrichment;
 import org.opennms.poc.graph.api.enrichment.NodeRef;
 import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.impl.refs.NodeRefs;
@@ -46,7 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Scope(SCOPE_PROTOTYPE) // TODO MVR is this correct? We need probably multiple and need to ensure they are thread safe
-public class NodeResolutionCompution implements Compution<NodeInfo> {
+public class NodeResolutionEnrichment implements Enrichment<NodeInfo> {
 
     @Autowired
     private NodeDao nodeDao;
@@ -54,20 +54,19 @@ public class NodeResolutionCompution implements Compution<NodeInfo> {
     @Override
     @Transactional
     public NodeInfo compute(Vertex vertex) {
-        for (Field f : vertex.getClass().getDeclaredFields()) {
+        for (Field field : vertex.getClass().getDeclaredFields()) {
             // Skip static fields
-            if (!Modifier.isStatic(f.getModifiers())
-                    || f.getAnnotation(NodeRef.class) != null) {
+            if (!Modifier.isStatic(field.getModifiers()) && field.getAnnotation(NodeRef.class) != null) {
                 // Verify value is != null
                 try {
-                    f.setAccessible(true);
-                    if (f.get(vertex) == null) {
+                    field.setAccessible(true);
+                    if (field.get(vertex) == null) {
                         throw new IllegalStateException("Cannot load node info because noderef is null");
                     }
-                    if (f.getType().isPrimitive() && ((Number)f.get(vertex)).longValue() == 0) {
+                    if (field.getType().isPrimitive() && ((Number)field.get(vertex)).longValue() == 0) {
                         throw new IllegalStateException("Cannot load node info because noderef is 0");
                     }
-                    Object value = f.get(vertex);
+                    Object value = field.get(vertex);
                     final org.opennms.poc.graph.impl.refs.NodeRef nodeRef = NodeRefs.from(value.toString());
                     final NodeInfo resolve = nodeRef.resolve(nodeDao);
                     return resolve;

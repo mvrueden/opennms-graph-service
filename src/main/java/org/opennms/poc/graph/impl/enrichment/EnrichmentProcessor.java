@@ -31,9 +31,9 @@ package org.opennms.poc.graph.impl.enrichment;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-import org.opennms.poc.graph.api.enrichment.Computed;
-import org.opennms.poc.graph.api.enrichment.Compution;
-import org.opennms.poc.graph.api.enrichment.Constant;
+import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.enrichment.Enriched;
+import org.opennms.poc.graph.api.enrichment.Enrichment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
@@ -46,41 +46,29 @@ public class EnrichmentProcessor {
     @Autowired
     private AutowireCapableBeanFactory beanFactory;
 
-    public void enrich(ComputedVertexExample vertex) {
-        for (Field f : vertex.getClass().getDeclaredFields()) {
-            // Skip static fields
-            if (!Modifier.isStatic(f.getModifiers())
-                    && f.getAnnotation(Constant.class) != null
-                    || f.getAnnotation(Computed.class) != null) {
-                // Verify value is != null
-                try {
-                    f.setAccessible(true);
-                    if (f.get(vertex) == null) {
-                        final Constant constant = f.getAnnotation(Constant.class);
-                        if (constant != null) {
-                            if (constant.value() == null) continue;
-                            if (f.getType() == Long.class) {
-                                f.set(vertex, Long.valueOf(constant.value()));
-                            } else if (f.getType() == Short.class) {
-                                f.set(vertex, Short.valueOf(constant.value()));
-                            }
-                            // TODO MVR implement more
-                            else {
-                                f.set(vertex, constant.value());
-                            }
-                        }
-                        final Computed computed = f.getAnnotation(Computed.class);
-                        if (computed != null) {
-                            final Compution compution = beanFactory.getBean(computed.compution());
-                            Object value = compution.compute(vertex);
-                            if (value != null) { // TODO MVR verify type compatibility
-                                f.set(vertex, value);
-                            }
-                        }
+    public void enrich(Vertex vertex, Field field) {
+        // Verify value is != null
+        try {
+            field.setAccessible(true);
+            if (field.get(vertex) == null) {
+                final Enriched enriched = field.getAnnotation(Enriched.class);
+                if (enriched != null) {
+                    final Enrichment enrichment = beanFactory.getBean(enriched.enrichment());
+                    Object value = enrichment.compute(vertex);
+                    if (value != null) { // TODO MVR verify type compatibility
+                        field.set(vertex, value);
                     }
-                } catch (IllegalAccessException ex) {
-                    // TODO MVR
                 }
+            }
+        } catch (IllegalAccessException ex) {
+            // TODO MVR
+        }
+    }
+
+    public void enrich(EnrichedVertexExample vertex) {
+        for (Field field : vertex.getClass().getDeclaredFields()) {
+            if (!Modifier.isStatic(field.getModifiers()) && field.getAnnotation(Enriched.class) != null) {
+                enrich(vertex, field);
             }
         }
     }

@@ -26,36 +26,11 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph;
+package org.opennms.poc.graph.api.enrichment;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.opennms.poc.graph.impl.enrichment.ComputedVertexExample;
-import org.opennms.poc.graph.impl.enrichment.EnrichmentProcessor;
-import org.opennms.poc.graph.impl.enrichment.NodeSeverity;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.opennms.poc.graph.api.Vertex;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-// TODO MVR define test scope little smaller (only enrichment processor + compution is required)
-public class ComputedVertexTest {
+public interface Enrichment<T> {
 
-    @Autowired
-    private EnrichmentProcessor processor;
-
-    @Test
-    public void verifyComputed() {
-        final ComputedVertexExample vertex = new ComputedVertexExample("1");
-        Assert.assertNull(vertex.getDescription());
-        Assert.assertNull(vertex.getField1());
-
-        processor.enrich(vertex);
-
-        Assert.assertEquals("Enriched Description", vertex.getDescription());
-        Assert.assertEquals(42L, (long) vertex.getField1());
-        Assert.assertEquals(NodeSeverity.Major, vertex.getStatus());
-    }
+    T compute(Vertex vertex);
 }

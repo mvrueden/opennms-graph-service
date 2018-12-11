@@ -28,41 +28,27 @@
 
 package org.opennms.poc.graph.impl.enrichment;
 
-import org.opennms.poc.graph.api.enrichment.Computed;
-import org.opennms.poc.graph.api.enrichment.Constant;
+import org.opennms.poc.graph.api.enrichment.Enriched;
 import org.opennms.poc.graph.api.enrichment.NodeRef;
 import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.api.simple.SimpleVertex;
 
-public class ComputedVertexExample extends SimpleVertex {
+public class EnrichedVertexExample extends SimpleVertex {
 
     public static final String NAMESPACE = "example";
 
     @NodeRef
-    private Integer nodeId = 18;
+    private Integer nodeId;
 
-    @Constant(name = "field1", value = "42")
-    private Long field1;
-
-    @Constant(name = "field2", value = "Enriched Description")
-    private String description;
-
-    @Computed(name = "node", compution = NodeResolutionCompution.class)
+    @Enriched(name = "node", enrichment = NodeResolutionEnrichment.class)
     private NodeInfo nodeInfo;
 
-    @Computed(name = "severity", compution = NodeSeverityComputation.class)
+    @Enriched(name = "severity", enrichment = NodeSeverityEnrichment.class)
     private NodeSeverity status;
 
-    public ComputedVertexExample(String id) {
+    public EnrichedVertexExample(String id, Integer nodeId) {
         super(NAMESPACE, id);
-    }
-
-    public Long getField1() {
-        return field1;
-    }
-
-    public String getDescription() {
-        return description;
+        this.nodeId = nodeId;
     }
 
     public NodeInfo getNodeInfo() {
