@@ -36,13 +36,11 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.enrichment.Enriched;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -61,8 +59,8 @@ public class VertexFactory {
                 .filter(pd -> pd.getReadMethod() != null)
                 .filter(pd -> {
                     try {
-                        Field field = vertexTypeToCreate.getDeclaredField(pd.getName());
-                        return !Modifier.isStatic(field.getModifiers()) && field.getAnnotation(Enriched.class) != null;
+                        final Field field = vertexTypeToCreate.getDeclaredField(pd.getName());
+                        return new EnrichedField(field).isEnrichable();
                     } catch (NoSuchFieldException e) {
                         return false;
                     }
@@ -80,10 +78,8 @@ public class VertexFactory {
                 }
                 final PropertyDescriptor propertyDescriptor = pdMap.get(thisMethod.getName());
                 final Field field = vertexTypeToCreate.getDeclaredField(propertyDescriptor.getName());
-                field.setAccessible(true);
-                if (field.get(self) == null) { // TODO MVR already enriched, but null?
-                    processor.enrich((Vertex) self, field);
-                }
+                final EnrichedField enrichedField = new EnrichedField(field);
+                processor.enrich((Vertex) self, enrichedField);
                 try {
                     return proceed.invoke(self, args);
                 } catch (InvocationTargetException ex) {

@@ -38,10 +38,11 @@ import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.enrichment.VertexEnrichmentProcessor;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.impl.enrichment.EnrichedField;
+import org.opennms.poc.graph.impl.enrichment.EnrichmentProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,7 +58,7 @@ public class GraphRestService {
     private GraphService graphService;
 
     @Autowired
-    private List<VertexEnrichmentProcessor> enrichmentProcessors;
+    private EnrichmentProcessor enrichmentProcessor;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<GraphInfo> listNamespaces() {
@@ -87,9 +88,13 @@ public class GraphRestService {
             });
             graph.getVertices().stream().forEach(vertex -> {
                 final GenericVertex genericVertex = vertex.asGenericVertex();
-                enrichmentProcessors.forEach(p -> {
-                    if (p.canEnrich(genericVertex.getNamespace())) {
-                        p.enrich(genericVertex);
+                enrichmentProcessor.enrich(vertex); // force enrichment at this point for the whole vertex
+
+                // At this point we store the computed values accordingly
+                final List<EnrichedField> fields = enrichmentProcessor.getEnrichableFields(vertex);
+                fields.forEach(ef -> {
+                    if (!ef.isNull(vertex)) {
+                        genericVertex.setComputedProperty(ef.getEnrichedAnnotation().name(), ef.getValue(vertex));
                     }
                 });
 

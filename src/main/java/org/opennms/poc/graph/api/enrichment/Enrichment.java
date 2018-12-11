@@ -30,6 +30,7 @@ package org.opennms.poc.graph.api.enrichment;
 
 import org.opennms.poc.graph.api.Vertex;
 
+// TODO MVR make it namespace aware?
 public interface Enrichment<T> {
 
     T compute(Vertex vertex);
