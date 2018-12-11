@@ -30,15 +30,12 @@ package org.opennms.poc.graph.impl.enrichment;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-
 import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.enrichment.Enrichment;
-import org.opennms.poc.graph.api.enrichment.NodeRef;
+import org.opennms.poc.graph.api.enrichment.NodeRefAware;
 import org.opennms.poc.graph.api.info.NodeInfo;
-import org.opennms.poc.graph.impl.refs.NodeRefs;
+import org.opennms.poc.graph.impl.refs.NodeRef;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -54,44 +51,11 @@ public class NodeResolutionEnrichment implements Enrichment<NodeInfo> {
     @Override
     @Transactional
     public NodeInfo compute(Vertex vertex) {
-        for (Field field : vertex.getClass().getDeclaredFields()) {
-            // Skip static fields
-            if (!Modifier.isStatic(field.getModifiers()) && field.getAnnotation(NodeRef.class) != null) {
-                // Verify value is != null
-                try {
-                    field.setAccessible(true);
-                    if (field.get(vertex) == null) {
-                        throw new IllegalStateException("Cannot load node info because noderef is null");
-                    }
-                    if (field.getType().isPrimitive() && ((Number)field.get(vertex)).longValue() == 0) {
-                        throw new IllegalStateException("Cannot load node info because noderef is 0");
-                    }
-                    Object value = field.get(vertex);
-                    final org.opennms.poc.graph.impl.refs.NodeRef nodeRef = NodeRefs.from(value.toString());
-                    final NodeInfo resolve = nodeRef.resolve(nodeDao);
-                    return resolve;
-
-
-//                    // TODO MVR handle case when node_id AND node_ref are defined
-//                    if (vertex.getProperty(GenericProperties.NODE_ID) != null && vertex.getProperty(GenericProperties.NODE_REF) != null) {
-//                        LOG.warn("{} and {} are defined on vertex with id {}. {} will be preferred",
-//                                GenericProperties.NODE_ID, GenericProperties.NODE_REF,
-//                                vertex.getId(), GenericProperties.NODE_REF);
-//                    }
-//                    if (vertex.getProperty(GenericProperties.NODE_REF) != null
-//                            || vertex.getProperty(GenericProperties.NODE_ID) != null) {
-//                        final String nodeRef = vertex.getProperty(GenericProperties.NODE_REF) != null
-//                                ? vertex.getProperty(GenericProperties.NODE_REF)
-//                                : "" + ((int) vertex.getProperty(GenericProperties.NODE_ID));
-//                        final NodeInfo node = NodeRefs.from(nodeRef).resolve(nodeDao);
-//                        vertex.setComputedProperty("node", node);
-//                    }
-
-                } catch (IllegalAccessException ex) {
-                    // TODO MVR
-                }
-            }
+        if (!(vertex instanceof NodeRefAware)) {
+            throw new IllegalArgumentException("Provided vertex must be of type NodeRefAware in order to resolve the node");
         }
-        throw new IllegalStateException("Given vertex was not annotated with @NodeRef. Cannot resolve NodeInfo");
+        final NodeRef nodeRef = ((NodeRefAware) vertex).getNodeRef();
+        final NodeInfo resolve = nodeRef.resolve(nodeDao);
+        return resolve;
     }
 }

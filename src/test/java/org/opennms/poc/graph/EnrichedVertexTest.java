@@ -57,11 +57,11 @@ public class EnrichedVertexTest {
     public void verifyEnrichment() {
         final EnrichedVertexExample vertex = new EnrichedVertexExample("1", 18);
         Assert.assertNull(vertex.getNodeInfo());
-        Assert.assertNull(vertex.getStatus());
+        Assert.assertNull(vertex.getNodeSeverity());
 
         processor.enrich(vertex);
 
-        Assert.assertEquals(NodeSeverity.Major, vertex.getStatus());
+        Assert.assertEquals(NodeSeverity.Major, vertex.getNodeSeverity());
         Assert.assertNotNull(vertex.getNodeInfo());
     }
 
@@ -69,7 +69,7 @@ public class EnrichedVertexTest {
     @Test
     public void verifyAutoEnrichmentOnAccess() throws NoSuchMethodException, IntrospectionException, InstantiationException, IllegalAccessException, InvocationTargetException {
         final EnrichedVertexExample vertex = vertexFactory.createVertex(EnrichedVertexExample.class, "1", 18);
-        Assert.assertEquals(NodeSeverity.Major, vertex.getStatus());
+        Assert.assertEquals(NodeSeverity.Major, vertex.getNodeSeverity());
         Assert.assertNotNull(vertex.getNodeInfo());
     }
 }

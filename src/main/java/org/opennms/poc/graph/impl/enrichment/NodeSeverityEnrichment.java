@@ -32,7 +32,6 @@ import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.enrichment.Enrichment;
 import org.springframework.stereotype.Service;
 
-// TODO MVR enrichment vs computation
 @Service
 public class NodeSeverityEnrichment implements Enrichment<NodeSeverity> {
 

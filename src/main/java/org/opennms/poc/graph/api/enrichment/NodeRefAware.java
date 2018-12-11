@@ -28,10 +28,8 @@
 
 package org.opennms.poc.graph.api.enrichment;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import org.opennms.poc.graph.impl.refs.NodeRef;
 
-@Retention(RetentionPolicy.RUNTIME)
-public @interface NodeRef {
+public interface NodeRefAware {
+    NodeRef getNodeRef();
 }
-

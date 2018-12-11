@@ -29,22 +29,23 @@
 package org.opennms.poc.graph.impl.enrichment;
 
 import org.opennms.poc.graph.api.enrichment.Enriched;
-import org.opennms.poc.graph.api.enrichment.NodeRef;
+import org.opennms.poc.graph.api.enrichment.NodeRefAware;
 import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.api.simple.SimpleVertex;
+import org.opennms.poc.graph.impl.refs.NodeRef;
+import org.opennms.poc.graph.impl.refs.NodeRefs;
 
-public class EnrichedVertexExample extends SimpleVertex {
+public class EnrichedVertexExample extends SimpleVertex implements NodeRefAware {
 
     public static final String NAMESPACE = "example";
 
-    @NodeRef
     private Integer nodeId;
 
     @Enriched(name = "node", enrichment = NodeResolutionEnrichment.class)
     private NodeInfo nodeInfo;
 
     @Enriched(name = "severity", enrichment = NodeSeverityEnrichment.class)
-    private NodeSeverity status;
+    private NodeSeverity nodeSeverity;
 
     public EnrichedVertexExample(String id, Integer nodeId) {
         super(NAMESPACE, id);
@@ -55,7 +56,12 @@ public class EnrichedVertexExample extends SimpleVertex {
         return nodeInfo;
     }
 
-    public NodeSeverity getStatus() {
-        return status;
+    public NodeSeverity getNodeSeverity() {
+        return nodeSeverity;
+    }
+
+    @Override
+    public NodeRef getNodeRef() {
+        return NodeRefs.from(nodeId);
     }
 }
