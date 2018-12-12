@@ -32,20 +32,21 @@ import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.generic.GenericGraph;
-import org.opennms.poc.graph.api.generic.GenericProperties;
-import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.simple.SimpleEdge;
+import org.opennms.poc.graph.api.simple.SimpleGraph;
+import org.opennms.poc.graph.impl.refs.NodeRefs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 // Dummy GraphProvider, which shows all nodes.
 // Required to simulate Node Enrichment
 @Component
 public class NodeGraphProvider implements GraphProvider {
 
-    private static final String NAMESPACE = "nodes";
+    public static final String NAMESPACE = "nodes";
 
     @Autowired
     private NodeDao nodeDao;
@@ -55,19 +56,14 @@ public class NodeGraphProvider implements GraphProvider {
 
     }
 
+    @Transactional
     public Graph loadGraph() {
-        final GenericGraph graph = new GenericGraph();
-        graph.setNamespace(NAMESPACE);
-
+        final SimpleGraph<NodeVertex, SimpleEdge<NodeVertex>> graph = new SimpleGraph<>(NAMESPACE);
         nodeDao.findAll().forEach(n -> {
-            final GenericVertex v = new GenericVertex();
-            v.setProperty(GenericProperties.NODE_ID, n.getId());
-            v.setNamespace(NAMESPACE);
-            v.setId("" + n.getId());
-
-            graph.addVertex(v);
+            NodeVertex vertex =  new NodeVertex(n);
+            vertex.setNodeInfo(NodeRefs.from(n.getId()).resolve(nodeDao)); // TODO MVR this is enriched, so should probably be automatically resolved
+            graph.addVertex(vertex);
         });
-
         return graph;
     }
 

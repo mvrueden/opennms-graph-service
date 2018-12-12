@@ -50,12 +50,16 @@ import org.opennms.netmgt.bsm.service.internal.BusinessServiceManagerImpl;
 import org.opennms.netmgt.bsm.service.internal.DefaultBusinessServiceStateMachine;
 import org.opennms.netmgt.config.DatabaseSchemaConfigFactory;
 import org.opennms.netmgt.dao.api.AlarmDao;
+import org.opennms.netmgt.dao.api.CategoryDao;
 import org.opennms.netmgt.dao.api.GenericPersistenceAccessor;
 import org.opennms.netmgt.dao.api.MonitoredServiceDao;
+import org.opennms.netmgt.dao.api.MonitoringLocationDao;
 import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.netmgt.dao.hibernate.AlarmDaoHibernate;
+import org.opennms.netmgt.dao.hibernate.CategoryDaoHibernate;
 import org.opennms.netmgt.dao.hibernate.GenericHibernateAccessor;
 import org.opennms.netmgt.dao.hibernate.MonitoredServiceDaoHibernate;
+import org.opennms.netmgt.dao.hibernate.MonitoringLocationDaoHibernate;
 import org.opennms.netmgt.dao.hibernate.NodeDaoHibernate;
 import org.opennms.netmgt.dao.mock.MockEventIpcManager;
 import org.opennms.netmgt.events.api.EventIpcManager;
@@ -90,56 +94,70 @@ public class BsmConfiguration {
 
     @Bean
     public AlarmDao createAlarmDao(SessionFactory sessionFactory) {
-        final AlarmDaoHibernate daoHibernate =  new AlarmDaoHibernate();
+        final AlarmDaoHibernate daoHibernate = new AlarmDaoHibernate();
         daoHibernate.setSessionFactory(sessionFactory);
         return daoHibernate;
     }
 
     @Bean
     public BusinessServiceDao createBusinessServiceDao(SessionFactory sessionFactory) {
-        final BusinessServiceDaoImpl daoHibernate =  new BusinessServiceDaoImpl();
+        final BusinessServiceDaoImpl daoHibernate = new BusinessServiceDaoImpl();
         daoHibernate.setSessionFactory(sessionFactory);
         return daoHibernate;
     }
 
     @Bean
     public BusinessServiceEdgeDao createBusinessServiceEdgeDao(SessionFactory sessionFactory) {
-        final BusinessServiceEdgeDaoImpl daoHibernate =  new BusinessServiceEdgeDaoImpl();
+        final BusinessServiceEdgeDaoImpl daoHibernate = new BusinessServiceEdgeDaoImpl();
         daoHibernate.setSessionFactory(sessionFactory);
         return daoHibernate;
     }
 
     @Bean
     public MonitoredServiceDao createMonitoredServiceDao(SessionFactory sessionFactory) {
-        final MonitoredServiceDaoHibernate daoHibernate =  new MonitoredServiceDaoHibernate();
+        final MonitoredServiceDaoHibernate daoHibernate = new MonitoredServiceDaoHibernate();
         daoHibernate.setSessionFactory(sessionFactory);
         return daoHibernate;
     }
 
     @Bean
     public MapFunctionDao createMapFunctionDao(SessionFactory sessionFactory) {
-        final MapFunctionDaoImpl daoHibernate =  new MapFunctionDaoImpl();
+        final MapFunctionDaoImpl daoHibernate = new MapFunctionDaoImpl();
         daoHibernate.setSessionFactory(sessionFactory);
         return daoHibernate;
     }
 
     @Bean
     public ReductionFunctionDao createReductionFunctionDao(SessionFactory sessionFactory) {
-        final ReductionFunctionDaoImpl daoHibernate =  new ReductionFunctionDaoImpl();
+        final ReductionFunctionDaoImpl daoHibernate = new ReductionFunctionDaoImpl();
         daoHibernate.setSessionFactory(sessionFactory);
         return daoHibernate;
     }
 
     @Bean
     public NodeDao createNodeDao(SessionFactory sessionFactory) {
-        final NodeDaoHibernate daoHibernate =  new NodeDaoHibernate();
+        final NodeDaoHibernate daoHibernate = new NodeDaoHibernate();
+        daoHibernate.setSessionFactory(sessionFactory);
+        return daoHibernate;
+    }
+
+    @Bean
+    public CategoryDao createCategoryDao(SessionFactory sessionFactory) {
+        final CategoryDaoHibernate daoHibernate = new CategoryDaoHibernate();
+        daoHibernate.setSessionFactory(sessionFactory);
+        return daoHibernate;
+    }
+
+    @Bean
+    public MonitoringLocationDao createMonitoringLocationDao(SessionFactory sessionFactory) {
+        final MonitoringLocationDaoHibernate daoHibernate = new MonitoringLocationDaoHibernate();
         daoHibernate.setSessionFactory(sessionFactory);
         return daoHibernate;
     }
 
     @Bean
     public FilterDao createFilterDao(DataSource dataSource) throws IOException {
-        final JdbcFilterDao filterDao =  new JdbcFilterDao();
+        final JdbcFilterDao filterDao = new JdbcFilterDao();
         filterDao.setDataSource(dataSource);
         filterDao.setDatabaseSchemaConfigFactory(new DatabaseSchemaConfigFactory());
         return filterDao;

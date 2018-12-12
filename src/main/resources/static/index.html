@@ -8,10 +8,11 @@
         <title>D3 Force-Directed Graph</title>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
         <script src="https://d3js.org/d3.v5.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-3-typeahead/4.0.2/bootstrap3-typeahead.min.js" ></script>
     </head>
     <body>
         <header>
@@ -42,10 +43,17 @@
                             </div>
                         </div>
                     </div>
-                    <form class="form-inline mt-2 mt-md-0">
-                        <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
-                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-                    </form>
+                    <div class="navbar-nav mr-auto" id="message">
+
+                    </div>
+                    <div class="form-inline mt-2 mt-md-0">
+                        <div class="input-group input-group-sm">
+                            <input class="form-control typeahead" id="searchQuery" name="searchQuery" type="text" placeholder="Search" autocomplete="off" aria-label="Search">
+                            <div class="input-group-append">
+                                <button id="search" class="btn btn-primary my-2 my-sm-0"><i class="fa fa-search"></i></button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </nav>
         </header>
@@ -81,6 +89,51 @@
         </footer>
     </body>
     <script type="application/javascript">
+        $(document).ready(function() {
+            $('#searchQuery').typeahead({
+                delay: 250,
+                source: function (query, process) {
+                    const namespace = getNamespace();
+                    $.ajax({
+                        type: "POST",
+                        url: "http://localhost:8080/rest/graphs/suggest/" + namespace,
+                        data: query,
+                        contentType: 'text/plain',
+                    }).done(function(data) {
+                        var convertedData = data.map(function(input) {
+                            return {name: input.label, context: input.context, provider: input.provider}
+                        });
+                        return process(convertedData);
+                    });
+                },
+                updater: function(item) {
+                    const namespace = getNamespace();
+                    const searchCriteria = {
+                        "namespace": namespace,
+                        "providerId" : item.provider,
+                        "criteria": item.name,
+                        "context": item.context,
+                    };
+                    $.ajax({
+                        type: "POST",
+                        url: "http://localhost:8080/rest/graphs/search",
+                        data: JSON.stringify(searchCriteria),
+                        contentType: "application/json"
+                    }).done(function(data) {
+                        if (data.vertices.length == 0) {
+                            $("#message").empty();
+                            $("#message").append("<div class='alert alert-info mb-0 px-1 py-1'>No data available</div>");
+                        } else {
+                            $("#message").empty();
+                            $("#message").append("<div class='alert alert-info mb-0 px-1 py-1'><button class='btn btn-link' onclick='redrawGraph(getNamespace())'><i class='fa fa-remove'></i></button><span>" + item.name + "</span> <span class='badge badge-secondary'>" + item.context + "</span></div>");
+                            renderGraph(data);
+                        }
+                    });
+                    return item;
+                }
+            });
+        });
+
         d3.json("http://localhost:8080/rest/graphs")
             .then(function(data) {
                 console.log(data);
@@ -105,12 +158,18 @@
                 onchange();
             });
 
-        function refresh() {
+        function getNamespace() {
             const namespace = d3.select("#namespaces").property('value');
+            return namespace;
+        }
+
+        function refresh() {
+            const namespace = getNamespace();
             redrawGraph(namespace);
         }
 
         function redrawGraph(namespace) {
+            $("#message").empty();
             d3.select("svg").selectAll("*").remove();
             d3.select("#info").selectAll("*").remove();
             d3.select("#graph-label").selectAll("*").remove();
@@ -119,111 +178,119 @@
             // Load data
             // d3.json("https://gist.githubusercontent.com/mbostock/4062045/raw/5916d145c8c048a6e3086915a6be464467391c62/miserables.json")
             d3.json("http://localhost:8080/rest/graphs/" + namespace)
-                .then(function(data) {
-                    // Add general graph info
-                    d3.select("#graph-label")
-                        .append("span")
-                        .text(function() {
-                            return data.label;
-                        });
-                    d3.select("#graph-description")
-                        .append("span")
-                        .text(function() {
-                            return data.description;
-                        });
+                .then(function(graph) {
+                    populateInfoPanel(graph);
+                    renderGraph(graph);
 
-
-                    // Draw Graph
-                    const links = data.edges.map(d => Object.create(d));
-                    const nodes = data.vertices.map(d => Object.create(d));
-                    const height = 512;
-                    const width = 1024;
-                    const scaleColor = d3.scaleOrdinal(d3.schemeCategory10);
-
-                    const simulation = d3.forceSimulation(nodes)
-                        .force("link", d3.forceLink(links).id(d => d.id))
-                        .force("charge", d3.forceManyBody())
-                        .force("center", d3.forceCenter()).on("tick", ticked);
-
-                    const svg = d3.select("svg")
-                        .attr("viewBox", [-width/2, -height/2, width, height]);
-
-                    const link = svg.append("g")
-                        .attr("stroke", "#999")
-                        .attr("stroke-opacity", 0.6)
-                        .selectAll("line")
-                        .data(links)
-                        .enter().append("line")
-                        .attr("class", "link")
-                        .attr("x1", d => d.source.x)
-                        .attr("y1", d => d.source.y)
-                        .attr("x2", d => d.target.x)
-                        .attr("y2", d => d.target.y)
-                        .attr("stroke-width", d => d.value ? Math.sqrt(d.value) : 1)
-                        .exit().remove()
-                    ;
-
-                    const node = svg.append("g")
-                        .attr("stroke", "#fff")
-                        .attr("stroke-width", 1.5)
-                        .selectAll("circle")
-                        .data(nodes)
-                        .enter().append("circle")
-                        .attr("class", "node")
-                        .attr("r", 5)
-                        .attr("fill", function(d) {
-                            const color = scaleColor(d.id);
-                            return color;
-                        })
-                        .on("click", function(d) {
-                            console.log("clicked " + d.id, d);
-                            d3.select("#info").selectAll("*").remove();
-                            d3.select("#info")
-                                .append("pre")
-                                .text(function() {
-                                    // Flatten as prototype properties etc are missing
-                                    var result = Object.create(d);
-                                    for(var key in result) {
-                                        result[key] = result[key];
-                                    }
-                                    console.log(JSON.stringify(result, null, 2));
-                                    return JSON.stringify(result, null, 2);
-                                });
-                        })
-                        .call(
-                            d3.drag()
-                                .on("start",  function dragstarted(d) {
-                                    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-                                    d.fx = d.x;
-                                    d.fy = d.y;
-                                })
-                                .on("drag", function dragged(d) {
-                                    d.fx = d3.event.x;
-                                    d.fy = d3.event.y;
-                                })
-                                .on("end", function dragended(d) {
-                                    if (!d3.event.active) simulation.alphaTarget(0);
-                                    d.fx = null;
-                                    d.fy = null;
-                                })
-                        )
-                        .append("title").text(d => d.id)
-                        .exit().remove();
-                    ;
-
-                    function ticked() {
-                        d3.selectAll(".link")
-                            .attr("x1", d => d.source.x ? d.source.x : 0)
-                            .attr("y1", d => d.source.y ? d.source.y : 30)
-                            .attr("x2", d => d.target.x ? d.target.x : -30)
-                            .attr("y2", d => d.target.y ? d.target.y : 30);
-
-                        d3.selectAll(".node")
-                            .attr("cx", d => d.x)
-                            .attr("cy", d => d.y);
-                    }
                 });
+        }
 
+        function populateInfoPanel(graph) {
+            // Add general graph info
+            d3.select("#graph-label")
+                .append("span")
+                .text(function () {
+                    return graph.label;
+                });
+            d3.select("#graph-description")
+                .append("span")
+                .text(function () {
+                    return graph.description;
+                });
+        }
+
+        function renderGraph(graph) {
+            $("svg").empty();
+
+            // Draw Graph
+            const links = graph.edges.map(d => Object.create(d));
+            const nodes = graph.vertices.map(d => Object.create(d));
+            const height = 512;
+            const width = 1024;
+            const scaleColor = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id))
+                .force("charge", d3.forceManyBody())
+                .force("center", d3.forceCenter()).on("tick", ticked);
+
+            const svg = d3.select("svg")
+                .attr("viewBox", [-width/2, -height/2, width, height]);
+
+            const link = svg.append("g")
+                .attr("stroke", "#999")
+                .attr("stroke-opacity", 0.6)
+                .selectAll("line")
+                .data(links)
+                .enter().append("line")
+                .attr("class", "link")
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y)
+                .attr("stroke-width", d => d.value ? Math.sqrt(d.value) : 1)
+                .exit().remove()
+            ;
+
+            const node = svg.append("g")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1.5)
+                .selectAll("circle")
+                .data(nodes)
+                .enter().append("circle")
+                .attr("class", "node")
+                .attr("r", 5)
+                .attr("fill", function(d) {
+                    const color = scaleColor(d.id);
+                    return color;
+                })
+                .on("click", function(d) {
+                    console.log("clicked " + d.id, d);
+                    d3.select("#info").selectAll("*").remove();
+                    d3.select("#info")
+                        .append("pre")
+                        .text(function() {
+                            // Flatten as prototype properties etc are missing
+                            var result = Object.create(d);
+                            for(var key in result) {
+                                result[key] = result[key];
+                            }
+                            console.log(JSON.stringify(result, null, 2));
+                            return JSON.stringify(result, null, 2);
+                        });
+                })
+                .call(
+                    d3.drag()
+                        .on("start",  function dragstarted(d) {
+                            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+                            d.fx = d.x;
+                            d.fy = d.y;
+                        })
+                        .on("drag", function dragged(d) {
+                            d.fx = d3.event.x;
+                            d.fy = d3.event.y;
+                        })
+                        .on("end", function dragended(d) {
+                            if (!d3.event.active) simulation.alphaTarget(0);
+                            d.fx = null;
+                            d.fy = null;
+                        })
+                )
+                .append("title").text(d => d.id)
+                .exit().remove();
+            ;
+
+            function ticked() {
+                d3.selectAll(".link")
+                    .attr("x1", d => d.source.x ? d.source.x : 0)
+                    .attr("y1", d => d.source.y ? d.source.y : 30)
+                    .attr("x2", d => d.target.x ? d.target.x : -30)
+                    .attr("y2", d => d.target.y ? d.target.y : 30);
+
+                d3.selectAll(".node")
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+            }
         }
 
     </script>

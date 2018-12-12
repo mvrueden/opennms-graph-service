@@ -48,14 +48,19 @@ import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.opennms.poc.graph.api.listener.GraphChangeSetListener;
+import org.opennms.poc.graph.api.search.GraphSearchService;
+import org.opennms.poc.graph.api.search.SearchCriteria;
+import org.opennms.poc.graph.api.search.SearchProvider;
+import org.opennms.poc.graph.api.search.SearchSuggestion;
 import org.opennms.poc.graph.impl.change.ChangeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 // How would this listen to events in the first place?
 @Service
-public class DefaultGraphService implements GraphService {
+public class DefaultGraphService implements GraphService, GraphSearchService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultGraphService.class);
 
@@ -68,6 +73,9 @@ public class DefaultGraphService implements GraphService {
     private List<GraphHandle> providers = new ArrayList<>();
     private List<Entity<GraphChangeSetListener<?, ?>>> graphChangeSetListenerEntities = new ArrayList<>();
     private List<Entity<GraphChangeListener<?, ?>>> graphChangeListenerEntities = new ArrayList<>();
+
+    @Autowired
+    private List<SearchProvider> searchProviders;
 
     @PreDestroy
     public void preDestroy() {
@@ -182,6 +190,20 @@ public class DefaultGraphService implements GraphService {
                 changeSet.accept(listener);
             }
         }
+    }
+
+    @Override
+    public List<SearchSuggestion> getSuggestions(String namespace, String input) {
+        return searchProviders.stream().filter(provider -> provider.canSuggest(namespace))
+                .flatMap(provider -> provider.getSuggestions(this, namespace, input).stream())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Vertex> search(SearchCriteria searchCriteria) {
+        return searchProviders.stream().filter(provider -> provider.canResolve(searchCriteria.getProviderId()))
+                .flatMap(provider -> provider.resolve(this, searchCriteria).stream())
+                .collect(Collectors.toList());
     }
 
     private List<GraphChangeSetListener> getChangeSetListeners(final String namespace) {

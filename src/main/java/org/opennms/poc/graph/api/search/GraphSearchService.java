@@ -26,18 +26,26 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph;
+package org.opennms.poc.graph.api.search;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import java.util.List;
 
-@Configuration
-public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
+import org.opennms.poc.graph.api.Vertex;
 
-    @Override
-    public void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests().anyRequest().permitAll();
-        http.csrf().disable();
-    }
+/**
+ * Service to search all graphs
+ */
+public interface GraphSearchService {
+
+    /**
+     * Returns a list of suggestions for the given namespace and input, where input may only be a
+     * snippet of the whole data, e.g. for type ahead support.
+     *
+     * @param namespace The namespace to search in
+     * @param input The "thing" to search
+     * @return A list of results, the user may select from
+     */
+    List<SearchSuggestion> getSuggestions(String namespace, String input);
+
+    List<Vertex> search(SearchCriteria searchCriteria);
 }
