@@ -26,11 +26,25 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl.service;
+package org.opennms.poc.graph.api.info;
 
-public enum GraphState {
-    Initializing,
-    Reloading,
-    Ready,
-    Error;
+import java.util.List;
+
+public interface GraphContainerInfo {
+
+    String getId();
+
+    List<String> getNamespaces();
+
+    String getDescription();
+
+    String getLabel();
+
+    GraphInfo getGraphInfo(String namespace);
+
+    void addGraphInfo(GraphInfo graphInfo);
+
+    GraphInfo getPrimaryGraphInfo();
+
+
 }

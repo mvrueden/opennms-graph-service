@@ -28,28 +28,29 @@
 
 package org.opennms.poc.graph.impl.service;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
-import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphContainer;
+import org.opennms.poc.graph.api.GraphContainerProvider;
 import org.opennms.poc.graph.api.GraphNotificationService;
-import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.info.GraphContainerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GraphHandle implements GraphProvider {
+public class GraphContainerHandle implements GraphContainerProvider {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraphHandle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraphContainerHandle.class);
 
     private final ExecutorService executorService;
-    private final GraphProvider provider;
-    private GraphState state = GraphState.Initializing;
-    private Graph cachedGraph;
+    private final GraphContainerProvider provider;
+    private GraphContainerState state = GraphContainerState.Initializing;
+    private GraphContainer cachedGraphContainer;
     private long lastReloadTime;
 
-    public GraphHandle(ExecutorService executorService, GraphProvider provider) {
+    public GraphContainerHandle(ExecutorService executorService, GraphContainerProvider provider) {
         this.provider = Objects.requireNonNull(provider);
         this.executorService = Objects.requireNonNull(executorService);
     }
@@ -60,19 +61,24 @@ public class GraphHandle implements GraphProvider {
     }
 
     @Override
-    public Graph loadGraph() {
-        if (state == GraphState.Initializing) {
+    public GraphContainer loadGraphContainer() {
+        if (state == GraphContainerState.Initializing) {
             throw new IllegalStateException("Cannot read graph as not yet initialized. Please initialize first");
         }
-        if (state == GraphState.Error) {
+        if (state == GraphContainerState.Error) {
             throw new IllegalStateException("Could not load graph.");
         }
-        if (state != GraphState.Reloading  && requireReload()) {
-            LOG.warn("Graph {} needs reloading. Triggering reload", getGraphInfo().getNamespace());
-            state = GraphState.Reloading;
+        if (state != GraphContainerState.Reloading  && requireReload()) {
+            LOG.warn("Graph {} needs reloading. Triggering reload", getContainerInfo().getNamespaces());
+            state = GraphContainerState.Reloading;
             initialize();
         }
-        return cachedGraph;
+        return cachedGraphContainer;
+    }
+
+    @Override
+    public GraphContainerInfo getContainerInfo() {
+        return provider.getContainerInfo();
     }
 
     // TODO MVR here we reload hard every 5 seconds
@@ -83,39 +89,35 @@ public class GraphHandle implements GraphProvider {
         return false;
     }
 
-    @Override
-    public GraphInfo getGraphInfo() {
-        return provider.getGraphInfo();
-    }
-
     public void initialize() {
-        LOG.info("Initialize loading of graph {}", provider.getGraphInfo().getNamespace());
+        final List<String> namespaces = provider.getContainerInfo().getNamespaces();
+        LOG.info("Initialize loading of graph {}", namespaces);
 
         // Initialize provider
-        final CompletableFuture<Graph> completableFuture = new CompletableFuture<>();
-        completableFuture.handle((graph, throwable) -> {
+        final CompletableFuture<GraphContainer> completableFuture = new CompletableFuture<>();
+        completableFuture.handle((graphContainer, throwable) -> {
             if (throwable != null) {
                 LOG.error("Could not load graph: {}", throwable.getMessage(), throwable);
-                state = GraphState.Error;
+                state = GraphContainerState.Error;
             }
-            if (graph == null) {
+            if (graphContainer == null) {
                 LOG.warn("Received null graph.");
-                state = GraphState.Error;
+                state = GraphContainerState.Error;
             }
-            if (graph != null && throwable == null) {
-                LOG.info("Graph loaded: {}", graph.getNamespace());
-                state = GraphState.Ready;
+            if (graphContainer != null && throwable == null) {
+                LOG.info("GraphContainer loaded: {}({})", graphContainer.getInfo().getLabel(), namespaces);
+                state = GraphContainerState.Ready;
             }
-            cachedGraph = graph;
+            cachedGraphContainer = graphContainer;
             lastReloadTime = System.currentTimeMillis();
-            return graph;
+            return graphContainer;
         });
 
         // Run
         executorService.submit(() -> {
             try {
-                final Graph graph = provider.loadGraph();
-                completableFuture.complete(graph);
+                final GraphContainer graphContainer = provider.loadGraphContainer();
+                completableFuture.complete(graphContainer);
             } catch (Exception ex) {
                 completableFuture.completeExceptionally(ex);
             }
@@ -123,6 +125,6 @@ public class GraphHandle implements GraphProvider {
     }
 
     public boolean isReady() {
-        return state == GraphState.Ready || state == GraphState.Reloading;
+        return state == GraphContainerState.Ready || state == GraphContainerState.Reloading;
     }
 }

@@ -7,8 +7,8 @@ import java.util.HashMap;
 import org.opennms.features.graphml.model.InvalidGraphException;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.persistence.GraphRepository;
-import org.opennms.poc.graph.impl.GraphmlProvider;
 import org.opennms.poc.graph.impl.bsm.BsmGraphProvider;
+import org.opennms.poc.graph.impl.graphml.GraphmlGraphContainerProvider;
 import org.opennms.poc.graph.impl.nodes.NodeGraphProvider;
 import org.opennms.poc.graph.impl.partial.PartialGraphListener;
 import org.opennms.poc.graph.impl.service.DefaultGraphService;
@@ -57,7 +57,7 @@ public class GraphApplication {
 
 	@Scheduled(initialDelay = 5000, fixedDelay = 60 * 1000 * 60 * 24)
 	public void initializeGraphProvider() throws InvalidGraphException {
-		graphService.onBind(new GraphmlProvider(getClass().getResourceAsStream("/graphml-graph.xml")), new HashMap());
+		graphService.onBind(new GraphmlGraphContainerProvider(getClass().getResourceAsStream("/graphml-graph.xml")), new HashMap());
 		graphService.onBind((GraphProvider) new VmwareGraphListener(),  ImmutableMap.of("namespace", VmwareImporter.NAMESPACE));
 		graphService.onBind(vmwareImporter, new HashMap<>());
 		graphService.onBind(bsmGraphProvider, new HashMap());

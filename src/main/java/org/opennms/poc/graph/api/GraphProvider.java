@@ -28,24 +28,37 @@
 
 package org.opennms.poc.graph.api;
 
-import org.opennms.poc.graph.api.info.GraphInfo;
-
 // TODO MVR the provider must provide information such as namespace, label, descriptin, etc. even if the graph itself is not loaded yet.
 // TODO MVR the graph provider should probably return multiple graphs (e.g. graphml)
 
+import org.opennms.poc.graph.api.info.DefaultGraphContainerInfo;
+import org.opennms.poc.graph.api.info.GraphContainerInfo;
+import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.meta.DefaultGraphContainer;
+
 /**
+ * Convenient interface if a provider only provides a single graph
  * @author mvrueden
  * @param <V>
  * @param <E>
  */
-public interface GraphProvider<V extends Vertex, E extends Edge<V>> {
+public interface GraphProvider<V extends Vertex, E extends Edge<V>> extends GraphContainerProvider {
 
-    /**
-     * The provider may need to inform about graph changes.
-     * Whith this method the {@link GraphNotificationService} is passed to the provider.
-     * @param notificationService
-     */
-    void setNotificationService(GraphNotificationService notificationService);
+    default GraphContainer loadGraphContainer() {
+        final GraphContainerInfo info = getContainerInfo();
+        final DefaultGraphContainer graphContainer = new DefaultGraphContainer(info);
+        graphContainer.addGraph(loadGraph());
+        return graphContainer;
+    }
+
+    default GraphContainerInfo getContainerInfo() {
+        final GraphInfo graphInfo = getGraphInfo();
+        final DefaultGraphContainerInfo containerInfo = new DefaultGraphContainerInfo(graphInfo.getNamespace());
+        containerInfo.setDescription(graphInfo.getDescription());
+        containerInfo.setLabel(graphInfo.getLabel());
+        containerInfo.addGraphInfo(graphInfo);
+        return containerInfo;
+    }
 
     /**
      * Loads the graph, this {@link GraphProvider} handles.

@@ -26,22 +26,48 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.meta;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphContainer;
+import org.opennms.poc.graph.api.generic.GenericGraphContainer;
 import org.opennms.poc.graph.api.info.GraphContainerInfo;
 
-public interface GraphService extends GraphNotificationService {
+public class DefaultGraphContainer implements GraphContainer {
+    private final GraphContainerInfo info;
+    private List<Graph<?,?>> graphs = new ArrayList<>();
 
-    List<GraphContainerInfo> getGraphContainerDetails();
+    public DefaultGraphContainer(GraphContainerInfo graphContainerInfo) {
+        this.info = Objects.requireNonNull(graphContainerInfo);
+    }
 
-    GraphContainer getGraphContainer(String id);
+    @Override
+    public GraphContainerInfo getInfo() {
+        return info;
+    }
 
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String containerId, String graphNamespace);
+    @Override
+    public List<Graph<?, ?>> getGraphs() {
+        return graphs;
+    }
 
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace);
+    @Override
+    public Graph<?, ?> getGraph(String namespace) {
+        return graphs.stream().filter(g -> g.getNamespace().equalsIgnoreCase(namespace)).findFirst().orElse(null);
+    }
 
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getSnapshot(Query query);
+    @Override
+    public GenericGraphContainer asGenericGraphContainer() {
+        // TODO MVR implement me
+        return null;
+    }
 
+    public void addGraph(Graph<?, ?> graph) {
+        this.info.addGraphInfo(graph);
+        this.graphs.add(graph);
+    }
 }

@@ -40,7 +40,7 @@ import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericVertex;
-import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.info.GraphContainerInfo;
 import org.opennms.poc.graph.api.search.GraphSearchService;
 import org.opennms.poc.graph.api.search.SearchCriteria;
 import org.opennms.poc.graph.api.search.SearchSuggestion;
@@ -69,11 +69,11 @@ public class GraphRestService {
     private EnrichmentProcessor enrichmentProcessor;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<GraphInfo> listNamespaces() {
+    public List<GraphContainerInfo> listNamespaces() {
         // TODO MVR a Graph implements GraphInfo and some of them return the graph (e.g. GraphML) as they are static anyways
         // and contain the information. However if that object is returned here, the whole graph is returned instead of just label,namespace,description,etc.
         // We should probably find a way to NOT do that
-        return graphService.getGraphDetails();
+        return graphService.getGraphContainerDetails();
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="{namespace}")

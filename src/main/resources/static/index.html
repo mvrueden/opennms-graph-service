@@ -18,25 +18,16 @@
         <header>
             <!-- Fixed navbar -->
             <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
-                <a class="navbar-brand" href="#">Fixed navbar</a>
+                <a class="navbar-brand" href="#">Graph Prototype</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <ul class="navbar-nav mr-2">
-                        <li class="nav-item active">
-                            <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Link</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link disabled" href="#">Disabled</a>
-                        </li>
                     </ul>
                     <div class="navbar-nav mr-auto">
                         <div class="input-group input-group-sm">
-                            <select id="namespaces" class="custom-select form-control form-control-sm">
+                            <select id="graphContainerIds" class="custom-select form-control form-control-sm">
                             </select>
                             <div class="input-group-append">
                                 <button class="btn btn-primary" onclick="refresh()"><i class="fa fa-refresh"></i></button>
@@ -62,6 +53,13 @@
         <main role="main" class="container-fluid" style="padding-top: 60px;">
             <div class="row">
                 <div class="col-md-2 bg-light">
+                    <span><b id="graph-container-label"></b></span>
+                    <div>
+                        <span class="text-muted">Available Graphs</span>
+                        <select id="namespaces" class="custom-select custom-select-sm">
+                        </select>
+                    </div>
+
                     <span><b id="graph-label"></b></span>
                     <div id="graph-description">
 
@@ -135,27 +133,49 @@
         });
 
         d3.json("http://localhost:8080/rest/graphs")
-            .then(function(data) {
-                console.log(data);
+            .then(function(containerData) {
+                console.log(containerData);
 
-                d3.select("#namespaces")
-                    .on('change',onchange)
+                d3.select("#graphContainerIds")
+                    .on('change', onContainerIdChange)
                     .selectAll("option")
-                    .data(data, function(d) { return d.namespace})
+                    .data(containerData, function(d) { return d.id})
                     .enter()
                     .append("option")
                     .attr("value", function(d) {
-                        return d.namespace;
+                        return d.id;
                     })
                     .text(function (d) { return d.label; })
                     .exit().remove();
 
-                function onchange() {
+                function onContainerIdChange() {
+                    const selectedGraphContainerId = d3.select('#graphContainerIds').property('value');
+                    const selectedGraphContainer = containerData.filter(function(item) {
+                        return item.id === selectedGraphContainerId;
+                    })[0];
+                    const graphData = selectedGraphContainer['graphInfos'];
+                    console.log(graphData);
+                    d3.select("#namespaces").selectAll("*").remove();
+                    d3.select("#namespaces")
+                        .on('change',onNamespaceChange)
+                        .selectAll("option")
+                        .data(graphData, function(d) { return d.namespace})
+                        .enter()
+                        .append("option")
+                        .attr("value", function(d) {
+                            return d.namespace;
+                        })
+                        .text(function (d) { return d.label === undefined || d.label === null ? d.namespace : d.label; })
+                        .exit().remove();
+                    onNamespaceChange();
+                };
+
+                function onNamespaceChange() {
                     const selectedNamespace = d3.select('#namespaces').property('value')
                     redrawGraph(selectedNamespace);
                 };
 
-                onchange();
+                onContainerIdChange();
             });
 
         function getNamespace() {

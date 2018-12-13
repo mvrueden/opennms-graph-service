@@ -28,20 +28,17 @@
 
 package org.opennms.poc.graph.api;
 
-import java.util.List;
-
 import org.opennms.poc.graph.api.info.GraphContainerInfo;
 
-public interface GraphService extends GraphNotificationService {
+public interface GraphContainerProvider {
+    /**
+     * The provider may need to inform about graph changes.
+     * Whith this method the {@link GraphNotificationService} is passed to the provider.
+     * @param notificationService
+     */
+    void setNotificationService(GraphNotificationService notificationService);
 
-    List<GraphContainerInfo> getGraphContainerDetails();
+    GraphContainer loadGraphContainer();
 
-    GraphContainer getGraphContainer(String id);
-
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String containerId, String graphNamespace);
-
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace);
-
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getSnapshot(Query query);
-
+    GraphContainerInfo getContainerInfo();
 }

@@ -41,11 +41,13 @@ import javax.annotation.PreDestroy;
 
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphContainer;
+import org.opennms.poc.graph.api.GraphContainerProvider;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.info.GraphContainerInfo;
 import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.opennms.poc.graph.api.listener.GraphChangeSetListener;
 import org.opennms.poc.graph.api.search.GraphSearchService;
@@ -70,7 +72,7 @@ public class DefaultGraphService implements GraphService, GraphSearchService {
     }
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
-    private List<GraphHandle> providers = new ArrayList<>();
+    private List<GraphContainerHandle> providers = new ArrayList<>();
     private List<Entity<GraphChangeSetListener<?, ?>>> graphChangeSetListenerEntities = new ArrayList<>();
     private List<Entity<GraphChangeListener<?, ?>>> graphChangeListenerEntities = new ArrayList<>();
 
@@ -109,27 +111,28 @@ public class DefaultGraphService implements GraphService, GraphSearchService {
     }
 
     // OSGi-Hook
-    public void onBind(GraphProvider provider, Map properties) {
+    public void onBind(GraphContainerProvider provider, Map properties) {
         Objects.requireNonNull(provider);
-        LOG.info("New GraphProvider registered {}", provider.getGraphInfo());
+        LOG.info("New GraphContainerProvider registered {}", provider.getContainerInfo());
 
-        final GraphHandle graphHandle = new GraphHandle(executorService, provider);
-        graphHandle.setNotificationService(this);
-        providers.add(graphHandle);
-        graphHandle.initialize();
+        final GraphContainerHandle graphContainerHandle = new GraphContainerHandle(executorService, provider);
+        graphContainerHandle.setNotificationService(this);
+        providers.add(graphContainerHandle);
+        graphContainerHandle.initialize();
 
         // TODO MVR this will probably not really work in osgi-context
+        // TODO MVR this only listens to Graph changes, but now we have the concept of a GraphContainerChange :(
         if (provider instanceof GraphChangeListener) {
             onBind((GraphChangeListener) provider, properties);
         }
         // TODO MVR this will probably not really work in osgi-context
+        // TODO MVR this only listens to Graph changes, but now we have the concept of a GraphContainerChange :(
         if (provider instanceof GraphChangeSetListener) {
             onBind((GraphChangeSetListener) provider, properties);
         }
     }
 
-    // OSGi-Hook
-    public void onUnbind(GraphProvider provider, Map properties) {
+    public void onUnbind(GraphContainerProvider provider, Map properties) {
         // TODO MVR here we should probably remove the handle instead of the provider...
         providers.remove(provider);
         // TODO MVR this will probably not really work in osgi-context
@@ -142,23 +145,56 @@ public class DefaultGraphService implements GraphService, GraphSearchService {
         }
     }
 
+    // TODO MVR keep or remove?
+    public void onBind(GraphProvider provider, Map properties) {
+        if (!(provider instanceof GraphContainerProvider)) {
+            throw new IllegalStateException("Provider must also implement GraphContainerProvider interface");
+        }
+        onBind((GraphContainerProvider) provider, properties);
+    }
+
+    // OSGi-Hook
+    // TODO MVR keep or remove?
+    public void onUnbind(GraphProvider provider, Map properties) {
+       onUnbind((GraphContainerProvider) provider, properties);
+    }
+
     @Override
-    public List<GraphInfo> getGraphDetails() {
-        final List<GraphInfo> collect = providers.stream()
-                .filter(GraphHandle::isReady)
-                .map(GraphProvider::getGraphInfo)
+    public List<GraphContainerInfo> getGraphContainerDetails() {
+        final List<GraphContainerInfo> collect = providers.stream()
+                .filter(GraphContainerHandle::isReady)
+                .map(gc -> gc.getContainerInfo())
                 .collect(Collectors.toList());
         return collect;
     }
 
     @Override
-    public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace) {
-        final Optional<GraphHandle> first = providers.stream()
-                .filter(GraphHandle::isReady)
-                .filter(provider -> provider.getGraphInfo() != null && namespace.equals(provider.getGraphInfo().getNamespace()))
+    public GraphContainer getGraphContainer(String id) {
+        final Optional<GraphContainerHandle> first = providers.stream()
+                .filter(GraphContainerHandle::isReady)
+                .filter(provider -> provider.getContainerInfo() != null && id.equals(provider.getContainerInfo().getId()))
                 .findFirst();
         if (first.isPresent()) {
-            return first.get().loadGraph();
+            return first.get().loadGraphContainer();
+        }
+        return null;
+    }
+
+    @Override
+    public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace) {
+        final Optional<GraphContainerHandle> first = providers.stream().filter(p -> p.getContainerInfo().getGraphInfo(namespace) != null).findFirst();
+        if (first.isPresent()) {
+            final GraphContainer graphContainer = first.get().loadGraphContainer();
+            return (Graph<V, E>) graphContainer.getGraph(namespace);
+        }
+        return null;
+    }
+
+    @Override
+    public <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String containerId, String graphNamespace) {
+        final Optional<GraphContainer> containerOptional = Optional.ofNullable(getGraphContainer(containerId));
+        if (containerOptional.isPresent()) {
+            return (Graph<V, E>) containerOptional.get().getGraph(graphNamespace);
         }
         return null;
     }
