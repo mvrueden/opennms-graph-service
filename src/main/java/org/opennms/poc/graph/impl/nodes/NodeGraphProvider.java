@@ -30,10 +30,13 @@ package org.opennms.poc.graph.impl.nodes;
 
 import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.GraphContainer;
 import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
 import org.opennms.poc.graph.api.info.DefaultGraphInfo;
+import org.opennms.poc.graph.api.info.GraphContainerInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.api.meta.DefaultGraphContainer;
 import org.opennms.poc.graph.api.simple.SimpleEdge;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
 import org.opennms.poc.graph.impl.refs.NodeRefs;
@@ -56,7 +59,16 @@ public class NodeGraphProvider implements GraphProvider {
 
     }
 
+    @Override
     @Transactional
+    public GraphContainer loadGraphContainer() {
+        final GraphContainerInfo info = getContainerInfo();
+        final DefaultGraphContainer graphContainer = new DefaultGraphContainer(info);
+        graphContainer.addGraph(loadGraph());
+        return graphContainer;
+    }
+
+    @Override
     public Graph loadGraph() {
         final SimpleGraph<NodeVertex, SimpleEdge<NodeVertex>> graph = new SimpleGraph<>(NAMESPACE);
         nodeDao.findAll().forEach(n -> {
