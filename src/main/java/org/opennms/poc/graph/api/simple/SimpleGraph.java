@@ -52,6 +52,7 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     private final List<V> vertices = new ArrayList<>();
     private final List<E> edges = new ArrayList<>();
     private final String namespace;
+    private final Class<? extends SimpleVertex> vertexType;
 
     private String label;
     private String description;
@@ -60,7 +61,12 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     private final Map<String, E> edgeToIdMap = new HashMap<>();
 
     public SimpleGraph(String namespace) {
-        this.namespace = namespace;
+        this(namespace, SimpleVertex.class);
+    }
+
+    public SimpleGraph(String namespace, Class<? extends SimpleVertex> vertexType) {
+        this.namespace = Objects.requireNonNull(namespace);
+        this.vertexType = Objects.requireNonNull(vertexType);
     }
 
     @Override
@@ -86,6 +92,11 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     @Override
     public String getLabel() {
         return label;
+    }
+
+    @Override
+    public Class<? extends SimpleVertex> getVertexType() {
+        return vertexType;
     }
 
     public void setLabel(String label) {

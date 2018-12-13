@@ -48,6 +48,7 @@ import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.info.GraphContainerInfo;
+import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.listener.GraphChangeListener;
 import org.opennms.poc.graph.api.listener.GraphChangeSetListener;
 import org.opennms.poc.graph.api.search.GraphSearchService;
@@ -169,6 +170,14 @@ public class DefaultGraphService implements GraphService, GraphSearchService {
     }
 
     @Override
+    public GraphContainerInfo getGraphContainerInfo(String containerId) {
+        return providers.stream()
+                .map(provider -> provider.getContainerInfo())
+                .filter(ci -> ci.getId().equalsIgnoreCase(containerId))
+                .findFirst().orElse(null);
+    }
+
+    @Override
     public GraphContainer getGraphContainer(String id) {
         final Optional<GraphContainerHandle> first = providers.stream()
                 .filter(GraphContainerHandle::isReady)
@@ -178,6 +187,14 @@ public class DefaultGraphService implements GraphService, GraphSearchService {
             return first.get().loadGraphContainer();
         }
         return null;
+    }
+
+    @Override
+    public GraphInfo getGraphInfo(String graphNamespace) {
+        return providers.stream()
+                .map(provider -> provider.getContainerInfo())
+                .filter(ci -> ci.getGraphInfo(graphNamespace) != null)
+                .findFirst().map(ci -> ci.getGraphInfo(graphNamespace)).orElse(null);
     }
 
     @Override
@@ -230,7 +247,7 @@ public class DefaultGraphService implements GraphService, GraphSearchService {
 
     @Override
     public List<SearchSuggestion> getSuggestions(String namespace, String input) {
-        return searchProviders.stream().filter(provider -> provider.canSuggest(namespace))
+        return searchProviders.stream().filter(provider -> provider.canSuggest(this, namespace))
                 .flatMap(provider -> provider.getSuggestions(this, namespace, input).stream())
                 .collect(Collectors.toList());
     }

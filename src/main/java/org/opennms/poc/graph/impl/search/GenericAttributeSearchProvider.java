@@ -48,7 +48,7 @@ public class GenericAttributeSearchProvider implements SearchProvider {
     public static final String PROVIDER_ID = GenericAttributeSearchProvider.class.getSimpleName();
 
     @Override
-    public boolean canSuggest(String namespace) {
+    public boolean canSuggest(GraphService graphService, String namespace) {
         return true; // always return true
     }
 

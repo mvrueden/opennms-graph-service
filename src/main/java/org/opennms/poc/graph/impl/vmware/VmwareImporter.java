@@ -135,7 +135,7 @@ public class VmwareImporter implements GraphProvider<VmwareVertex, VmwareEdge>  
 
     @Override
     public GraphInfo getGraphInfo() {
-        return new DefaultGraphInfo(NAMESPACE)
+        return new DefaultGraphInfo(NAMESPACE, VmwareVertex.class)
                 .withLabel("VMware")
                 .withDescription("Displays the infrastructure information gathered by the VMware Provisioning process.");
     }

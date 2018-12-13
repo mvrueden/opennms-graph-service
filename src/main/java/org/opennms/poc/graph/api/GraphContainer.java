@@ -30,7 +30,6 @@ package org.opennms.poc.graph.api;
 
 import java.util.List;
 
-import org.opennms.poc.graph.api.generic.GenericGraphContainer;
 import org.opennms.poc.graph.api.info.GraphContainerInfo;
 
 /**
@@ -59,5 +58,4 @@ public interface GraphContainer {
     GraphContainerInfo getInfo();
     List<Graph<?,?>> getGraphs();
     Graph<?, ?> getGraph(String namespace);
-    GenericGraphContainer asGenericGraphContainer();
 }

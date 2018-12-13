@@ -38,7 +38,7 @@ import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.info.NodeInfo;
+import org.opennms.poc.graph.api.aware.LocationAware;
 import org.opennms.poc.graph.api.search.SearchCriteria;
 import org.opennms.poc.graph.api.search.SearchProvider;
 import org.opennms.poc.graph.api.search.SearchSuggestion;
@@ -57,8 +57,8 @@ public class LocationSearchProvider implements SearchProvider {
     private MonitoringLocationDao locationDao;
 
     @Override
-    public boolean canSuggest(String namespace) {
-        return true; // Basically all locations may be seaerched
+    public boolean canSuggest(GraphService graphService, String namespace) {
+        return LocationAware.class.isAssignableFrom(graphService.getGraphInfo(namespace).getVertexType());
     }
 
     @Override
@@ -79,8 +79,10 @@ public class LocationSearchProvider implements SearchProvider {
     public List<Vertex> resolve(GraphService graphService, SearchCriteria searchCriteria) {
         final Graph<Vertex, Edge<Vertex>> graph = graphService.getGraph(searchCriteria.getNamespace());
         final List<Vertex> vertices = graph.getVertices().stream()
-                .filter(v -> v.asGenericVertex().getProperty("node") != null && ((NodeInfo) v.asGenericVertex().getProperty("node")).getLocation() != null)
-                .filter(v -> ((NodeInfo) v.asGenericVertex().getProperty("node")).getLocation().equalsIgnoreCase(searchCriteria.getCriteria()))
+                .map(v -> (LocationAware) v )
+                .filter(v -> v.getLocation() != null)
+                .filter(v -> v.getLocation().equalsIgnoreCase(searchCriteria.getCriteria()))
+                .map(v -> (Vertex) v)
                 .collect(Collectors.toList());
         return vertices;
     }

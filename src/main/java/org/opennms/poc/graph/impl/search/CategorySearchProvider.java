@@ -34,14 +34,14 @@ import java.util.stream.Collectors;
 import org.opennms.core.criteria.CriteriaBuilder;
 import org.opennms.netmgt.dao.api.CategoryDao;
 import org.opennms.netmgt.model.OnmsCategory;
+import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphService;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.aware.NodeAware;
 import org.opennms.poc.graph.api.search.SearchCriteria;
 import org.opennms.poc.graph.api.search.SearchProvider;
 import org.opennms.poc.graph.api.search.SearchSuggestion;
-import org.opennms.poc.graph.api.simple.SimpleEdge;
-import org.opennms.poc.graph.impl.nodes.NodeVertex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,8 +55,8 @@ public class CategorySearchProvider implements SearchProvider {
     private CategoryDao categoryDao;
 
     @Override
-    public boolean canSuggest(String namespace) { // TODO MVR implement something like NodeAware similar to LocationAware
-        return "nodes".equalsIgnoreCase(namespace);
+    public boolean canSuggest(GraphService graphService, String namespace) {
+        return NodeAware.class.isAssignableFrom(graphService.getGraphInfo(namespace).getVertexType());
     }
 
     @Transactional
@@ -75,9 +75,11 @@ public class CategorySearchProvider implements SearchProvider {
 
     @Override
     public List<Vertex> resolve(GraphService graphService, SearchCriteria searchCriteria) {
-        final Graph<NodeVertex, SimpleEdge<NodeVertex>> graph = graphService.getGraph(searchCriteria.getNamespace());
+        final Graph<Vertex, Edge<Vertex>> graph = graphService.getGraph(searchCriteria.getNamespace());
         return graph.getVertices().stream()
+                .map(v -> (NodeAware) v)
                 .filter(v -> v.getNodeInfo().getCategories().contains(searchCriteria.getCriteria()))
+                .map(v -> (Vertex) v)
                 .collect(Collectors.toList());
     }
 }

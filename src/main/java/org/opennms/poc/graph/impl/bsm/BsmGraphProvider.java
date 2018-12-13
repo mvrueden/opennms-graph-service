@@ -55,7 +55,7 @@ public class BsmGraphProvider implements GraphProvider, BusinessServiceStateChan
     @Autowired
     private BusinessServiceManager serviceManager;
 
-    private GraphInfo graphInfo = new DefaultGraphInfo(NAMESPACE)
+    private GraphInfo graphInfo = new DefaultGraphInfo(NAMESPACE, BusinessServiceVertex.class)
             .withLabel("Business Services")
             .withDescription("Displays the hierarchy of defined Business Services and their computed operational states.");
 

@@ -57,6 +57,7 @@ public interface GenericProperties {
     String LEVEL = "level";
     String EDGE_PATH_OFFSET = "edge-path-offset";
     String BREADCRUMB_STRATEGY = "breadcrumb-strategy";
+    String LOCATION = "location";
 
     // Reference to a node, either the id, or a <foreignSource>:<foreignId> statement
     String NODE_REF = "nodeRef";

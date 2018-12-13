@@ -32,8 +32,8 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import org.opennms.netmgt.dao.api.NodeDao;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.aware.NodeAware;
 import org.opennms.poc.graph.api.enrichment.Enrichment;
-import org.opennms.poc.graph.api.enrichment.NodeRefAware;
 import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.impl.refs.NodeRef;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,10 +51,10 @@ public class NodeResolutionEnrichment implements Enrichment<NodeInfo> {
     @Override
     @Transactional
     public NodeInfo compute(Vertex vertex) {
-        if (!(vertex instanceof NodeRefAware)) {
+        if (!(vertex instanceof NodeAware)) {
             throw new IllegalArgumentException("Provided vertex must be of type NodeRefAware in order to resolve the node");
         }
-        final NodeRef nodeRef = ((NodeRefAware) vertex).getNodeRef();
+        final NodeRef nodeRef = ((NodeAware) vertex).getNodeRef();
         final NodeInfo resolve = nodeRef.resolve(nodeDao);
         return resolve;
     }

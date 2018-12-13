@@ -81,7 +81,7 @@ public class NodeGraphProvider implements GraphProvider {
 
     @Override
     public GraphInfo getGraphInfo() {
-        return new DefaultGraphInfo(NAMESPACE)
+        return new DefaultGraphInfo(NAMESPACE, NodeVertex.class)
                 .withLabel("Nodes")
                 .withDescription("Visualizes all nodes (Later this will be enlind topology)");
     }

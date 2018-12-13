@@ -29,9 +29,9 @@
 package org.opennms.poc.graph.impl.graphml;
 
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.opennms.features.graphml.model.GraphML;
@@ -54,6 +54,7 @@ public class GraphmlGraphContainerProvider implements GraphContainerProvider {
 
     private final GraphML graphML;
     private DefaultGraphContainer graphContainer;
+    private HashMap<String, GraphMLGraph> vertexIdToGraphMapping;
 
     public GraphmlGraphContainerProvider(InputStream inputStream) throws InvalidGraphException {
         this(GraphMLReader.read(inputStream));
@@ -75,7 +76,20 @@ public class GraphmlGraphContainerProvider implements GraphContainerProvider {
     @Override
     public GraphContainer loadGraphContainer() {
         if (graphContainer == null) {
-            final DefaultGraphContainerInfo info = new DefaultGraphContainerInfo(UUID.randomUUID().toString());
+            vertexIdToGraphMapping = new HashMap<>();
+            // Index vertex id to graph mapping
+            graphML.getGraphs().stream().forEach(
+                    g -> g.getNodes().stream().forEach(n -> {
+                        if (vertexIdToGraphMapping.containsKey(n.getId())) {
+                            throw new IllegalStateException("GraphML graph contains vertices with same id. Bailing");
+                        }
+                        vertexIdToGraphMapping.put(n.getId(), g);
+                    })
+            );
+
+            // Convert graph
+            final String graphContainerId = graphML.getId() != null ? graphML.getId() : graphML.getProperty(GenericProperties.LABEL);
+            final DefaultGraphContainerInfo info = new DefaultGraphContainerInfo(graphContainerId);
             info.setLabel(graphML.getProperty(GenericProperties.LABEL));
             info.setDescription( graphML.getProperty(GenericProperties.DESCRIPTION));
             final DefaultGraphContainer graphContainer = new DefaultGraphContainer(info);
@@ -96,7 +110,7 @@ public class GraphmlGraphContainerProvider implements GraphContainerProvider {
         return graphContainer.getInfo();
     }
 
-    private static final Graph<GenericVertex, GenericEdge> convert(GraphMLGraph graphMLGraph) {
+    private final Graph<GenericVertex, GenericEdge> convert(GraphMLGraph graphMLGraph) {
         final GenericGraph graph = new GenericGraph(graphMLGraph.getProperties());
         final List<GenericVertex> vertices = graphMLGraph.getNodes()
                 .stream().map(n -> {
@@ -110,8 +124,10 @@ public class GraphmlGraphContainerProvider implements GraphContainerProvider {
         graph.addVertices(vertices);
 
         final List<GenericEdge> edges = graphMLGraph.getEdges().stream().map(e -> {
-            final GenericVertex source = graph.getVertex(e.getSource().getId());
-            final GenericVertex target = graph.getVertex(e.getTarget().getId());
+            final String sourceNamespace = vertexIdToGraphMapping.get(e.getSource().getId()).getProperty(GenericProperties.NAMESPACE);
+            final String targetNamespace = vertexIdToGraphMapping.get(e.getTarget().getId()).getProperty(GenericProperties.NAMESPACE);
+            final GenericVertex source = new GenericVertex(sourceNamespace, e.getSource().getId());
+            final GenericVertex target = new GenericVertex(targetNamespace, e.getTarget().getId());
             final GenericEdge edge = new GenericEdge(source, target);
             edge.setProperties(e.getProperties());
 

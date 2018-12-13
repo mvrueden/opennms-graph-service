@@ -43,11 +43,10 @@ import javax.persistence.OneToMany;
 
 import org.hibernate.annotations.Where;
 import org.opennms.poc.graph.api.generic.GenericProperties;
-import org.opennms.poc.graph.api.info.GraphInfo;
 
 @Entity
 @DiscriminatorValue("graph")
-public class GraphEntity extends AbstractGraphElementEntity implements GraphInfo  {
+public class GraphEntity extends AbstractGraphElementEntity {
 
     @Column(name = "namespace", unique = true)
     private String namespace;
@@ -72,13 +71,11 @@ public class GraphEntity extends AbstractGraphElementEntity implements GraphInfo
         return namespace;
     }
 
-    @Override
     public String getDescription() {
         // TODO MVR NPE
         return getProperty(GenericProperties.DESCRIPTION).getValue();
     }
 
-    @Override
     public String getLabel() {
         // TODO MVR NPE
         return getProperty(GenericProperties.LABEL).getValue();

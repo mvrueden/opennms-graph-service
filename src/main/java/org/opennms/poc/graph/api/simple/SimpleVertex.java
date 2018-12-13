@@ -29,16 +29,28 @@
 package org.opennms.poc.graph.api.simple;
 
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.aware.LocationAware;
+import org.opennms.poc.graph.api.aware.NodeAware;
+import org.opennms.poc.graph.api.enrichment.Enriched;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.info.NodeInfo;
+import org.opennms.poc.graph.impl.enrichment.NodeResolutionEnrichment;
+import org.opennms.poc.graph.impl.refs.NodeRef;
+import org.opennms.poc.graph.impl.refs.NodeRefs;
 
-public class SimpleVertex implements Vertex {
+public class SimpleVertex implements Vertex, NodeAware, LocationAware {
 
     private final String namespace;
     private final String id;
     private String iconKey; // TODO MVR remove me
     private String tooltip; // TODO MVR remove me
     private String label;
+    // Either nodeId as string or foreignSource:foreignId combination
+    private String nodeRefString;
+
+    @Enriched(name="node", enrichment = NodeResolutionEnrichment.class)
+    private NodeInfo nodeInfo;
 
     public SimpleVertex(String namespace, String id) {
         this.namespace = namespace;
@@ -96,8 +108,37 @@ public class SimpleVertex implements Vertex {
         return vertex;
     }
 
+    public NodeInfo getNodeInfo() {
+        return nodeInfo;
+    }
+
+    public void setNodeInfo(NodeInfo nodeInfo) {
+        this.nodeInfo = nodeInfo;
+    }
+
+    @Override
+    public NodeRef getNodeRef() {
+        return NodeRefs.from(getNodeRefString());
+    }
+
+    public String getNodeRefString() {
+        return nodeRefString;
+    }
+
+    public void setNodeRefString(String nodeRefString) {
+        this.nodeRefString = nodeRefString;
+    }
+
     @Override
     public String toString() {
         return asGenericVertex().toString();
+    }
+
+    @Override
+    public String getLocation() {
+        if (getNodeInfo() != null) {
+            return getNodeInfo().getLocation();
+        }
+        return null;
     }
 }

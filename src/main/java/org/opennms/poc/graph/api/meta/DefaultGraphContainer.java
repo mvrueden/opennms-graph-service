@@ -34,7 +34,6 @@ import java.util.Objects;
 
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphContainer;
-import org.opennms.poc.graph.api.generic.GenericGraphContainer;
 import org.opennms.poc.graph.api.info.GraphContainerInfo;
 
 public class DefaultGraphContainer implements GraphContainer {
@@ -58,12 +57,6 @@ public class DefaultGraphContainer implements GraphContainer {
     @Override
     public Graph<?, ?> getGraph(String namespace) {
         return graphs.stream().filter(g -> g.getNamespace().equalsIgnoreCase(namespace)).findFirst().orElse(null);
-    }
-
-    @Override
-    public GenericGraphContainer asGenericGraphContainer() {
-        // TODO MVR implement me
-        return null;
     }
 
     public void addGraph(Graph<?, ?> graph) {

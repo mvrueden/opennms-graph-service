@@ -28,6 +28,8 @@
 
 package org.opennms.poc.graph.api.info;
 
+import org.opennms.poc.graph.api.Vertex;
+
 public interface GraphInfo {
 
     // The namespace of the graph. Should be unique overall Graphs
@@ -39,4 +41,11 @@ public interface GraphInfo {
 
     // A user friendly name/label of the graph, e.g. "Business Service Graph"
     String getLabel();
+
+    // Returns the type of the vertex.
+    // Vertices in a graph may be of different types, but they should all share the same
+    // parent vertex. So if a provider must implement custom vertices, each vertex should inherit <namespace>Vertex, e.g. AbstractNodesVertex
+    // Otherwise this concept does not work.
+    // The vertex type is also relevant for implementing type safe search.
+    Class<? extends Vertex> getVertexType();
 }

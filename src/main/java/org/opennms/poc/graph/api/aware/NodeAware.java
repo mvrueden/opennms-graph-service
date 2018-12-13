@@ -26,10 +26,12 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.enrichment;
+package org.opennms.poc.graph.api.aware;
 
+import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.impl.refs.NodeRef;
 
-public interface NodeRefAware {
+public interface NodeAware {
     NodeRef getNodeRef();
+    NodeInfo getNodeInfo();
 }

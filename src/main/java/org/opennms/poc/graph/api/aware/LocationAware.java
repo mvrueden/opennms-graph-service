@@ -26,26 +26,8 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.aware;
 
-import java.util.List;
-
-import org.opennms.poc.graph.api.info.GraphContainerInfo;
-import org.opennms.poc.graph.api.info.GraphInfo;
-
-public interface GraphService extends GraphNotificationService {
-
-    List<GraphContainerInfo> getGraphContainerDetails();
-    GraphContainerInfo getGraphContainerInfo(String containerId);
-
-    GraphContainer getGraphContainer(String containerId);
-
-    GraphInfo getGraphInfo(String graphNamespace);
-
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String containerId, String graphNamespace);
-
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getGraph(String namespace);
-
-    <V extends Vertex, E extends Edge<V>> Graph<V, E> getSnapshot(Query query);
-
+public interface LocationAware {
+    String getLocation();
 }

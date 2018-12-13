@@ -64,6 +64,6 @@ public class SlowGraphProvider implements GraphProvider<SimpleVertex, SimpleEdge
 
     @Override
     public GraphInfo getGraphInfo() {
-        return new DefaultGraphInfo("slow").withLabel("Slow").withDescription("Graph simulating a very slow loading time of 30 seconds");
+        return new DefaultGraphInfo("slow", SimpleVertex.class).withLabel("Slow").withDescription("Graph simulating a very slow loading time of 30 seconds");
     }
 }

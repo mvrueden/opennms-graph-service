@@ -71,7 +71,7 @@ public class PartialGraphListener implements GraphChangeSetListener<Vertex, Edge
 
     @Override
     public GraphInfo getGraphInfo() {
-        return new DefaultGraphInfo(namespace)
+        return new DefaultGraphInfo(namespace, Vertex.class)
                 .withLabel(namespace)
                 .withLabel("Displays vertices of " + namespace);
     }

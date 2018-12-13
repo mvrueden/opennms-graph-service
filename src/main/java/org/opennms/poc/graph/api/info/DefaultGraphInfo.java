@@ -30,6 +30,8 @@ package org.opennms.poc.graph.api.info;
 
 import java.util.Objects;
 
+import org.opennms.poc.graph.api.Vertex;
+
 import com.google.common.base.MoreObjects;
 
 public class DefaultGraphInfo implements GraphInfo {
@@ -37,9 +39,11 @@ public class DefaultGraphInfo implements GraphInfo {
     private String namespace;
     private String description;
     private String label;
+    private Class<? extends Vertex> vertexType;
 
-    public DefaultGraphInfo(final String namespace) {
+    public DefaultGraphInfo(final String namespace, Class<? extends Vertex> vertexType) {
         this.namespace = Objects.requireNonNull(namespace);
+        this.vertexType = Objects.requireNonNull(vertexType);
     }
 
     @Override
@@ -55,6 +59,11 @@ public class DefaultGraphInfo implements GraphInfo {
     @Override
     public String getLabel() {
         return label;
+    }
+
+    @Override
+    public Class<? extends Vertex> getVertexType() {
+        return vertexType;
     }
 
     public void setNamespace(String namespace) {

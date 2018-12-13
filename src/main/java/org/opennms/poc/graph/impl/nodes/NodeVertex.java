@@ -29,42 +29,12 @@
 package org.opennms.poc.graph.impl.nodes;
 
 import org.opennms.netmgt.model.OnmsNode;
-import org.opennms.poc.graph.api.enrichment.Enriched;
-import org.opennms.poc.graph.api.enrichment.NodeRefAware;
-import org.opennms.poc.graph.api.generic.GenericVertex;
-import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.api.simple.SimpleVertex;
-import org.opennms.poc.graph.impl.enrichment.NodeResolutionEnrichment;
-import org.opennms.poc.graph.impl.refs.NodeRef;
-import org.opennms.poc.graph.impl.refs.NodeRefs;
 
-public class NodeVertex extends SimpleVertex implements NodeRefAware {
-
-    @Enriched(name="node", enrichment = NodeResolutionEnrichment.class)
-    public NodeInfo nodeInfo;
+public class NodeVertex extends SimpleVertex {
 
     public NodeVertex(OnmsNode n) {
         super(NodeGraphProvider.NAMESPACE, n.getNodeId());
-    }
-
-    @Override
-    public NodeRef getNodeRef() {
-        return NodeRefs.from(getId());
-    }
-
-    public NodeInfo getNodeInfo() {
-        return nodeInfo;
-    }
-
-    public void setNodeInfo(NodeInfo nodeInfo) {
-        this.nodeInfo = nodeInfo;
-    }
-
-    @Override
-    public GenericVertex asGenericVertex() {
-        // TODO MVR enrichment :(
-        final GenericVertex vertex = super.asGenericVertex();
-        vertex.setProperty("node", getNodeInfo());
-        return vertex;
+        setNodeRefString(getId());
     }
 }

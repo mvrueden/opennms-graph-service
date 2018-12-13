@@ -222,8 +222,12 @@
         function renderGraph(graph) {
             $("svg").empty();
 
+            const vertexIds = graph.vertices.map(item => item.id);
+
             // Draw Graph
-            const links = graph.edges.map(d => Object.create(d));
+            const links = graph.edges.map(d => Object.create(d)).filter(function(item) {
+                return vertexIds.includes(item.source) && vertexIds.includes(item.target);
+            });
             const nodes = graph.vertices.map(d => Object.create(d));
             const height = 512;
             const width = 1024;

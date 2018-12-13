@@ -44,6 +44,7 @@ import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.generic.GenericVertex;
+import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.persistence.EdgeEntity;
 import org.opennms.poc.graph.api.persistence.GraphEntity;
@@ -149,7 +150,12 @@ public class DefaultGraphRepository implements GraphRepository {
     @Override
     public List<GraphInfo> findAll() {
         final List<GraphEntity> graphs = accessor.find("Select g from GraphEntity g");
-        final List<GraphInfo> graphInfos = new ArrayList<>(graphs);
+        final List<GraphInfo> graphInfos = graphs.stream().map(g -> {
+            final DefaultGraphInfo graphInfo = new DefaultGraphInfo(g.getNamespace(), GenericVertex.class /* TODO MVR this is not correct */);
+            graphInfo.withDescription(g.getDescription());
+            graphInfo.withLabel(g.getLabel());
+            return graphInfo;
+        }).collect(Collectors.toList());
         return graphInfos;
     }
 

@@ -110,7 +110,7 @@ public class VmwareGraphListener implements GraphChangeListener<Vertex, Edge<Ver
 
     @Override
     public GraphInfo getGraphInfo() {
-        return new DefaultGraphInfo(graph.getNamespace())
+        return new DefaultGraphInfo(graph.getNamespace(), VmwareVertex.class)
                 .withLabel("VMware Listener Provider")
                 .withDescription("Listens for updates of the VMWare Importer to dynamically build the graph");
     }

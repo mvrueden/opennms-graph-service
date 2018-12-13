@@ -40,7 +40,7 @@ public interface SearchProvider {
      * @param namespace The namespace to make suggestions to.
      * @return True if suggestions can be made, false otherwise
      */
-    boolean canSuggest(String namespace);
+    boolean canSuggest(GraphService graphService, String namespace);
 
     /**
      * Provide suggestions for the given namespace, given the input.

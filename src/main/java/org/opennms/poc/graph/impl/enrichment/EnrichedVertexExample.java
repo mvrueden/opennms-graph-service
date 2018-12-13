@@ -28,14 +28,14 @@
 
 package org.opennms.poc.graph.impl.enrichment;
 
+import org.opennms.poc.graph.api.aware.NodeAware;
 import org.opennms.poc.graph.api.enrichment.Enriched;
-import org.opennms.poc.graph.api.enrichment.NodeRefAware;
 import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.api.simple.SimpleVertex;
 import org.opennms.poc.graph.impl.refs.NodeRef;
 import org.opennms.poc.graph.impl.refs.NodeRefs;
 
-public class EnrichedVertexExample extends SimpleVertex implements NodeRefAware {
+public class EnrichedVertexExample extends SimpleVertex implements NodeAware {
 
     public static final String NAMESPACE = "example";
 

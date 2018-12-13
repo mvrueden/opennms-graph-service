@@ -34,12 +34,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.aware.LocationAware;
+import org.opennms.poc.graph.api.aware.NodeAware;
+import org.opennms.poc.graph.api.info.NodeInfo;
+import org.opennms.poc.graph.impl.refs.NodeRef;
+import org.opennms.poc.graph.impl.refs.NodeRefs;
 
 // TODO MVR enforce namespace
-public class GenericGraph extends AbstractElement implements Graph<GenericVertex, GenericEdge> {
+public class GenericGraph extends AbstractElement implements Graph<GenericVertex, GenericEdge>, NodeAware, LocationAware {
 
     private final List<GenericVertex> vertices = new ArrayList<>();
     private final List<GenericEdge> edges = new ArrayList<>();
@@ -74,6 +81,38 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     @Override
     public String getLabel() {
         return getProperty(GenericProperties.LABEL);
+    }
+
+    @Override
+    public Class<? extends Vertex> getVertexType() {
+        return GenericVertex.class;
+    }
+
+    @Override
+    public String getLocation() {
+        return getProperty(GenericProperties.LOCATION);
+    }
+
+    @Override
+    public NodeRef getNodeRef() {
+        String nodeId = getProperty(GenericProperties.NODE_ID);
+        String foreignSource = getProperty(GenericProperties.FOREIGN_SOURCE);
+        String foreignId = getProperty(GenericProperties.FOREIGN_ID);
+        if (nodeId != null) {
+            return NodeRefs.from(nodeId);
+        } else if (foreignSource != null && foreignId != null) {
+            return NodeRefs.from(foreignSource + ":" + foreignId);
+        }
+        return null;
+    }
+
+    @Override
+    public NodeInfo getNodeInfo() {
+        final Optional<Object> first = getProperties().values().stream().filter(v -> v instanceof NodeInfo).findFirst();
+        if (first.isPresent()) {
+            return (NodeInfo) first.get();
+        }
+        return (NodeInfo) getComputedProperties().values().stream().filter(v -> v instanceof NodeInfo).findFirst().orElse(null);
     }
 
     @Override
