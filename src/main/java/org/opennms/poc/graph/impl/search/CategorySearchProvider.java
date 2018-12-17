@@ -78,7 +78,7 @@ public class CategorySearchProvider implements SearchProvider {
         final Graph<Vertex, Edge<Vertex>> graph = graphService.getGraph(searchCriteria.getNamespace());
         return graph.getVertices().stream()
                 .map(v -> (NodeAware) v)
-                .filter(v -> v.getNodeInfo().getCategories().contains(searchCriteria.getCriteria()))
+                .filter(v -> v.getNodeInfo() != null && v.getNodeInfo().getCategories().contains(searchCriteria.getCriteria()))
                 .map(v -> (Vertex) v)
                 .collect(Collectors.toList());
     }

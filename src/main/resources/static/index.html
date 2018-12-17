@@ -34,6 +34,11 @@
                             </div>
                         </div>
                     </div>
+                    <div class="navbar-nav ml-2 mr-auto">
+                        <div class="input-group input-group-sm">
+                            <label for="szl">SZL</label><input id="szl" name="szl" class="form-control" min="0" max="100" type="number" value="0" />
+                        </div>
+                    </div>
                     <div class="navbar-nav mr-auto" id="message">
 
                     </div>
@@ -70,6 +75,12 @@
                             <span class="text-muted">Nothing selected</span>
                         </div>
                     </div>
+
+                    <div class="mt-2" style="overflow:hidden">
+                        <span><b>Focus Info</b></span>
+                        <div id="focus" class="small">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-md-10">
@@ -87,14 +98,29 @@
         </footer>
     </body>
     <script type="application/javascript">
+        let query = {
+            "szl": 0,
+            "searchCriteria": [],
+            "containerId": undefined,
+            "namespace": undefined
+        };
+
         $(document).ready(function() {
+            $('#szl').val(query.szl);
+            $('#szl').on('change', function(e) {
+                let newSzl = $('#szl').val();
+                if (query.szl !== newSzl) {
+                    query.szl = newSzl;
+                    redrawGraph(query);
+                }
+            });
             $('#searchQuery').typeahead({
                 delay: 250,
                 source: function (query, process) {
                     const namespace = getNamespace();
                     $.ajax({
                         type: "POST",
-                        url: "http://localhost:8080/rest/graphs/suggest/" + namespace,
+                        url: "http://localhost:8080/rest/graphs/" + namespace + "/suggest/",
                         data: query,
                         contentType: 'text/plain',
                     }).done(function(data) {
@@ -105,34 +131,20 @@
                     });
                 },
                 updater: function(item) {
-                    const namespace = getNamespace();
                     const searchCriteria = {
-                        "namespace": namespace,
+                        "namespace": query.namespace,
                         "providerId" : item.provider,
                         "criteria": item.name,
                         "context": item.context,
                     };
-                    $.ajax({
-                        type: "POST",
-                        url: "http://localhost:8080/rest/graphs/search",
-                        data: JSON.stringify(searchCriteria),
-                        contentType: "application/json"
-                    }).done(function(data) {
-                        if (data.vertices.length == 0) {
-                            $("#message").empty();
-                            $("#message").append("<div class='alert alert-info mb-0 px-1 py-1'>No data available</div>");
-                        } else {
-                            $("#message").empty();
-                            $("#message").append("<div class='alert alert-info mb-0 px-1 py-1'><button class='btn btn-link' onclick='redrawGraph(getNamespace())'><i class='fa fa-remove'></i></button><span>" + item.name + "</span> <span class='badge badge-secondary'>" + item.context + "</span></div>");
-                            renderGraph(data);
-                        }
-                    });
+                    query.searchCriteria.push(searchCriteria);
+                    redrawGraph(query);
                     return item;
                 }
             });
         });
 
-        d3.json("http://localhost:8080/rest/graphs")
+        d3.json("http://localhost:8080/rest/graphs/")
             .then(function(containerData) {
                 console.log(containerData);
 
@@ -154,6 +166,8 @@
                         return item.id === selectedGraphContainerId;
                     })[0];
                     const graphData = selectedGraphContainer['graphInfos'];
+                    query.searchCriteria = []; // reset
+                    query.containerId = selectedGraphContainerId;
                     console.log(graphData);
                     d3.select("#namespaces").selectAll("*").remove();
                     d3.select("#namespaces")
@@ -171,8 +185,10 @@
                 };
 
                 function onNamespaceChange() {
-                    const selectedNamespace = d3.select('#namespaces').property('value')
-                    redrawGraph(selectedNamespace);
+                    const selectedNamespace = d3.select('#namespaces').property('value');
+                    query.searchCriteria = []; // reset
+                    query.namespace = selectedNamespace;
+                    redrawGraph(query);
                 };
 
                 onContainerIdChange();
@@ -184,11 +200,11 @@
         }
 
         function refresh() {
-            const namespace = getNamespace();
-            redrawGraph(namespace);
+            redrawGraph(query);
         }
 
-        function redrawGraph(namespace) {
+        function redrawGraph(query) {
+            console.log("Redrawing graph for query", query);
             $("#message").empty();
             d3.select("svg").selectAll("*").remove();
             d3.select("#info").selectAll("*").remove();
@@ -196,13 +212,39 @@
             d3.select("#graph-description").selectAll("*").remove();
 
             // Load data
-            // d3.json("https://gist.githubusercontent.com/mbostock/4062045/raw/5916d145c8c048a6e3086915a6be464467391c62/miserables.json")
-            d3.json("http://localhost:8080/rest/graphs/" + namespace)
-                .then(function(graph) {
-                    populateInfoPanel(graph);
-                    renderGraph(graph);
+            $.ajax({
+                type: "POST",
+                url: "http://localhost:8080/rest/graphs/" + query.namespace + "/snapshot",
+                data: JSON.stringify(query),
+                contentType: "application/json"
+            }).done(function(snapshot) {
+                populateInfoPanel(snapshot);
+                renderGraph(snapshot);
+                populateFocus(query, snapshot);
+            });
+        }
 
-                });
+        function populateFocus(query) {
+            $("#focus").empty();
+            for (var i=0; i<query.searchCriteria.length; i++) {
+                var criteria = query.searchCriteria[i];
+                $("<button class='btn btn-link focus-item'><i class='fa fa-remove'></i></button><span>" + criteria.criteria + "</span> <span class='badge badge-secondary'>" + criteria.context + "</span>")
+                    .on("click", function(e) {
+                        removeCriteria(criteria);
+                    }).appendTo("#focus");
+            }
+            if (query.searchCriteria.length == 0) {
+                $("#focus").append("No Search Criteria defined")
+            }
+        }
+
+        function removeCriteria(criteria) {
+            console.log("Remove", criteria);
+            const index = query.searchCriteria.indexOf(criteria);
+            if (index >= 0) {
+                query.searchCriteria.splice(index, 1);
+                redrawGraph(query);
+            }
         }
 
         function populateInfoPanel(graph) {
@@ -221,7 +263,7 @@
 
         function renderGraph(graph) {
             $("svg").empty();
-
+            $("#message").empty();
             const vertexIds = graph.vertices.map(item => item.id);
 
             // Draw Graph
@@ -232,6 +274,11 @@
             const height = 512;
             const width = 1024;
             const scaleColor = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // If no data is available, show the user
+            if (graph.vertices.length == 0) {
+                $("#message").append("<div class='alert alert-warning mb-0 px-1 py-1'>No data available</div>");
+            }
 
             const simulation = d3.forceSimulation(nodes)
                 .force("link", d3.forceLink(links).id(d => d.id))

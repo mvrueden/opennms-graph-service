@@ -26,58 +26,42 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.context;
 
+import java.util.function.Supplier;
 
-import java.util.List;
+import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.Vertex;
 
-import org.opennms.poc.graph.api.search.SearchCriteria;
+public class DefaultGraphContext<V extends Vertex, E extends Edge<V>, G extends Graph<V, E>> implements GraphContext<V, E, G> {
 
-import com.google.common.collect.Lists;
+    private final String containerId;
+    private final String graphNamespace;
+    private final Supplier<G> graphSupplier;
 
-public class Query {
-
-    // selected container
-    private String containerId;
-
-    // graph namespace
-    // TODO MVR each SearchCriteria already has a namespace, however, we apply it here again, as we may require it
-    // and may not have a SearchCriteria defined
-    private String namespace;
-
-    private int szl = 1; // default is always 1
-
-    private List<SearchCriteria> searchCriteria = Lists.newArrayList();
-
-    public int getSzl() {
-        return szl;
+    public DefaultGraphContext(G graph) {
+        this(null, graph.getNamespace(), () -> graph);
     }
 
-    public void setSzl(int szl) {
-        this.szl = szl;
+    public DefaultGraphContext(String containerId, String graphNamespace, Supplier<G> graphSupplier) {
+        this.containerId = containerId;
+        this.graphNamespace = graphNamespace;
+        this.graphSupplier = graphSupplier;
     }
 
+    @Override
+    public String getNamespace() {
+        return graphNamespace;
+    }
+
+    @Override
     public String getContainerId() {
         return containerId;
     }
 
-    public void setContainerId(String containerId) {
-        this.containerId = containerId;
-    }
-
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
-
-    public List<SearchCriteria> getSearchCriteria() {
-        return searchCriteria;
-    }
-
-    public void setSearchCriteria(List<SearchCriteria> searchCriteria) {
-        this.searchCriteria = searchCriteria;
+    @Override
+    public G getGraph() {
+        return graphSupplier.get();
     }
 }

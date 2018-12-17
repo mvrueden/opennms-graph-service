@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -218,7 +219,17 @@ public class DefaultGraphService implements GraphService, GraphSearchService {
 
     @Override
     public <V extends Vertex, E extends Edge<V>> Graph<V, E> getSnapshot(Query query) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        final Graph<Vertex, Edge<Vertex>> graph = getGraph(query.getContainerId(), query.getNamespace());
+        if (graph != null) {
+            if (query.getSearchCriteria().isEmpty()) { // if no criteria is set, we apply the default focus
+                return (Graph<V, E>) graph.getSnapshot(graph.getDefaultFocus(), query.getSzl());
+            } else {
+                final Set<Vertex> verticesInFocus = query.getSearchCriteria().stream().flatMap(sc -> search(sc).stream()).collect(Collectors.toSet());
+                final Graph<Vertex, Edge<Vertex>> snapshot = graph.getSnapshot(verticesInFocus, query.getSzl());
+                return (Graph<V, E>) snapshot;
+            }
+        }
+        return null;
     }
 
     @Override

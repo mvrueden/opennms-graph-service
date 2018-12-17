@@ -29,29 +29,38 @@
 package org.opennms.poc.graph.api.generic;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.aware.LocationAware;
 import org.opennms.poc.graph.api.aware.NodeAware;
+import org.opennms.poc.graph.api.context.DefaultGraphContext;
+import org.opennms.poc.graph.api.focus.Focus;
 import org.opennms.poc.graph.api.info.NodeInfo;
+import org.opennms.poc.graph.impl.SemanticZoomLevelTransformer;
 import org.opennms.poc.graph.impl.refs.NodeRef;
 import org.opennms.poc.graph.impl.refs.NodeRefs;
+
+import com.google.common.collect.Lists;
+
+import edu.uci.ics.jung.graph.DirectedSparseGraph;
 
 // TODO MVR enforce namespace
 public class GenericGraph extends AbstractElement implements Graph<GenericVertex, GenericEdge>, NodeAware, LocationAware {
 
-    private final List<GenericVertex> vertices = new ArrayList<>();
-    private final List<GenericEdge> edges = new ArrayList<>();
+    private DirectedSparseGraph<GenericVertex, GenericEdge> jungGraph = new DirectedSparseGraph<>();
     private final Map<String, GenericVertex> vertexToIdMap = new HashMap<>();
     private final Map<String, GenericEdge> edgeToIdMap = new HashMap<>();
+    private Focus focusStrategy;
 
     public GenericGraph() {}
 
@@ -65,12 +74,16 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
 
     @Override
     public List<GenericVertex> getVertices() {
-        return Collections.unmodifiableList(vertices);
+        // TODO MVR use junggraph.getVetices instead. However addEdge is adding the edges if not in same namespace
+        // We have to figure out a workaround for that somehow
+        return new ArrayList<>(vertexToIdMap.values());
     }
 
     @Override
     public List<GenericEdge> getEdges() {
-        return Collections.unmodifiableList(edges);
+        // TODO MVR use junggraph.getEdges instead. However addEdge is adding the edges if not in same namespace
+        // We have to figure out a workaround for that somehow
+        return new ArrayList<>(edgeToIdMap.values());
     }
 
     @Override
@@ -86,6 +99,14 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     @Override
     public Class<? extends Vertex> getVertexType() {
         return GenericVertex.class;
+    }
+
+    @Override
+    public List<Vertex> getDefaultFocus() {
+        if (focusStrategy != null) {
+            return focusStrategy.getFocus(new DefaultGraphContext(this)).stream().map(vr -> vertexToIdMap.get(vr.getId())).collect(Collectors.toList());
+        }
+        return Lists.newArrayList();
     }
 
     @Override
@@ -136,14 +157,42 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     }
 
     @Override
-    public void addEdges(List<GenericEdge> edges) {
+    public Graph<GenericVertex, GenericEdge> getSnapshot(Collection<GenericVertex> verticesInFocus, int szl) {
+        return new SemanticZoomLevelTransformer<GenericVertex, GenericEdge, GenericGraph>(verticesInFocus, szl).transform(this, () -> new GenericGraph(getProperties()));
+    }
+
+    @Override
+    public List<GenericVertex> resolveVertices(Collection<String> vertexIds) {
+        return vertexIds.stream().map(vid -> vertexToIdMap.get(vid)).filter(v -> v != null).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<GenericEdge> resolveEdges(Collection<String> edgeIds) {
+        return edgeIds.stream().map(eid -> edgeToIdMap.get(eid)).collect(Collectors.toList());
+    }
+
+    @Override
+    public Collection<GenericVertex> getNeighbors(GenericVertex eachVertex) {
+        return jungGraph.getNeighbors(eachVertex);
+    }
+
+    @Override
+    public Collection<GenericEdge> getConnectingEdges(GenericVertex eachVertex) {
+        final Set<GenericEdge> edges = new HashSet<>();
+        edges.addAll(jungGraph.getInEdges(eachVertex));
+        edges.addAll(jungGraph.getOutEdges(eachVertex));
+        return edges;
+    }
+
+    @Override
+    public void addEdges(Collection<GenericEdge> edges) {
         for (GenericEdge eachEdge : edges) {
             addEdge(eachEdge);
         }
     }
 
     @Override
-    public void addVertices(List<GenericVertex> vertices) {
+    public void addVertices(Collection<GenericVertex> vertices) {
         for (GenericVertex eachVertex : vertices) {
             addVertex(eachVertex);
         }
@@ -153,16 +202,17 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     public void addVertex(GenericVertex vertex) {
         Objects.requireNonNull(vertex);
         Objects.requireNonNull(vertex.getId());
-        if (vertices.contains(vertex)) return; // already added
+        if (jungGraph.containsVertex(vertex)) return; // already added
+        if (vertexToIdMap.containsKey(vertex.getId())) return; // already added
         vertexToIdMap.put(vertex.getId(), vertex);
-        vertices.add(vertex);
+        jungGraph.addVertex(vertex);
     }
 
     @Override
     public void addEdge(GenericEdge edge) {
         Objects.requireNonNull(edge);
         Objects.requireNonNull(edge.getId());
-        if (edges.contains(edge)) return; // already added
+        if (jungGraph.containsEdge(edge)) return; // already added
         if (edge.getSource().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getSource().getId()) == null) {
             addVertex(edge.getSource());
         }
@@ -170,14 +220,14 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
             addVertex(edge.getTarget());
         }
         edgeToIdMap.put(edge.getId(), edge);
-        edges.add(edge);
+        jungGraph.addEdge(edge, edge.getSource(), edge.getTarget());
     }
 
     @Override
     public void removeEdge(GenericEdge edge) {
         Objects.requireNonNull(edge);
         edgeToIdMap.remove(edge.getId());
-        edges.remove(edge);
+        jungGraph.removeEdge(edge);
         // TODO MVR remove vertices as well?
     }
 
@@ -185,7 +235,7 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     public void removeVertex(GenericVertex vertex) {
         Objects.requireNonNull(vertex);
         vertexToIdMap.remove(vertex.getId());
-        vertices.remove(vertex);
+        jungGraph.removeVertex(vertex);
     }
 
     @Override
@@ -199,6 +249,10 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
         super.setId(namespace);
     }
 
+    public void setDefaultFocus(Focus focusStrategy) {
+        this.focusStrategy = Objects.requireNonNull(focusStrategy);
+    }
+
     @Override
     public GenericGraph asGenericGraph() {
         return this;
@@ -210,12 +264,13 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         GenericGraph that = (GenericGraph) o;
-        return Objects.equals(vertices, that.vertices) &&
-                Objects.equals(edges, that.edges);
+        return Objects.equals(getVertices(), that.getVertices())
+                && Objects.equals(getEdges(), that.getEdges())
+                && Objects.equals(focusStrategy, that.focusStrategy);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), vertices, edges);
+        return Objects.hash(super.hashCode(), getVertices(), getEdges(), focusStrategy);
     }
 }

@@ -38,10 +38,11 @@ import org.opennms.features.graphml.model.GraphML;
 import org.opennms.features.graphml.model.GraphMLGraph;
 import org.opennms.features.graphml.model.GraphMLReader;
 import org.opennms.features.graphml.model.InvalidGraphException;
-import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphContainer;
 import org.opennms.poc.graph.api.GraphContainerProvider;
 import org.opennms.poc.graph.api.GraphNotificationService;
+import org.opennms.poc.graph.api.focus.Focus;
+import org.opennms.poc.graph.api.focus.FocusStrategy;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericProperties;
@@ -49,6 +50,8 @@ import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.info.DefaultGraphContainerInfo;
 import org.opennms.poc.graph.api.info.GraphContainerInfo;
 import org.opennms.poc.graph.api.meta.DefaultGraphContainer;
+
+import com.google.common.collect.Lists;
 
 public class GraphmlGraphContainerProvider implements GraphContainerProvider {
 
@@ -94,7 +97,9 @@ public class GraphmlGraphContainerProvider implements GraphContainerProvider {
             info.setDescription( graphML.getProperty(GenericProperties.DESCRIPTION));
             final DefaultGraphContainer graphContainer = new DefaultGraphContainer(info);
             for (GraphMLGraph eachGraph : graphML.getGraphs()) {
-                final Graph<GenericVertex, GenericEdge> convertedGraph = convert(eachGraph);
+                final GenericGraph convertedGraph = convert(eachGraph);
+                final Focus focus = getFocusStrategy(eachGraph);
+                convertedGraph.setDefaultFocus(focus);
                 graphContainer.addGraph(convertedGraph);
             }
             this.graphContainer = graphContainer;
@@ -110,7 +115,7 @@ public class GraphmlGraphContainerProvider implements GraphContainerProvider {
         return graphContainer.getInfo();
     }
 
-    private final Graph<GenericVertex, GenericEdge> convert(GraphMLGraph graphMLGraph) {
+    private final GenericGraph convert(GraphMLGraph graphMLGraph) {
         final GenericGraph graph = new GenericGraph(graphMLGraph.getProperties());
         final List<GenericVertex> vertices = graphMLGraph.getNodes()
                 .stream().map(n -> {
@@ -139,4 +144,29 @@ public class GraphmlGraphContainerProvider implements GraphContainerProvider {
         graph.addEdges(edges);
         return graph;
     }
+
+    private static Focus getFocusStrategy(GraphMLGraph graph) {
+        final String strategy = graph.getProperty(GenericProperties.FOCUS_STRATEGY);
+        if (strategy != null) {
+            if ("all".equalsIgnoreCase(strategy)) return FocusStrategy.ALL;
+            if ("first".equals(strategy)) return FocusStrategy.FIRST;
+            if ("empty".equals(strategy)) return FocusStrategy.EMPTY;
+            if ("specific".equalsIgnoreCase(strategy)) {
+                final List<String> focusIds = getFocusIds(graph);
+                return FocusStrategy.SPECIFIC(focusIds);
+            }
+
+        }
+        return FocusStrategy.FIRST;
+    }
+
+    private static List<String> getFocusIds(GraphMLGraph graph) {
+        final String property = graph.getProperty(GenericProperties.FOCUS_IDS);
+        if (property != null) {
+            String[] split = property.split(",");
+            return Lists.newArrayList(split);
+        }
+        return Lists.newArrayList();
+    }
+
 }

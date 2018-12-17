@@ -37,12 +37,12 @@ import org.json.simple.JSONObject;
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphService;
+import org.opennms.poc.graph.api.Query;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.info.GraphContainerInfo;
 import org.opennms.poc.graph.api.search.GraphSearchService;
-import org.opennms.poc.graph.api.search.SearchCriteria;
 import org.opennms.poc.graph.api.search.SearchSuggestion;
 import org.opennms.poc.graph.impl.enrichment.EnrichedField;
 import org.opennms.poc.graph.impl.enrichment.EnrichmentProcessor;
@@ -79,6 +79,66 @@ public class GraphRestService {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="{namespace}")
     public JSONObject getGraph(@PathVariable(name="namespace") String namespace) {
         final Graph<Vertex, Edge<Vertex>> graph = graphService.getGraph(namespace);
+        JSONObject jsonGraph = convert(graph);
+        return jsonGraph;
+    }
+
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="{namespace}/snapshot")
+    public JSONObject getSnapshot(@PathVariable(name="namespace") String namespace, @RequestBody Query query) {
+        if (query.getNamespace() == null || "".equals(query.getNamespace())) {
+            query.setNamespace(namespace);
+        }
+        if (!query.getNamespace().equalsIgnoreCase(namespace)) {
+            throw new IllegalArgumentException("Provided query does not match requested namespace. Retry with correct parameters");
+        }
+        final Graph<Vertex, Edge<Vertex>> snapshot = graphService.getSnapshot(query);
+        return convert(snapshot);
+    }
+
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="{namespace}/suggest", consumes = MediaType.TEXT_PLAIN_VALUE)
+    public List<SearchSuggestion> makeSuggestions(@PathVariable(name="namespace") String namespace, @RequestBody String input) {
+        return graphSearchService.getSuggestions(namespace, input);
+    }
+
+//    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="search", consumes = MediaType.APPLICATION_JSON_VALUE)
+//    // TODO MVR this is probably going to be removed at some point
+//    public JSONObject resolve(@RequestBody SearchCriteria searchCriteria) {
+//        final List<Vertex> resolvedVertices = graphSearchService.search(searchCriteria);
+//        final JSONObject jsonGraph = new JSONObject();
+//        final JSONArray edgesArray = new JSONArray();
+//        final JSONArray verticesArray = new JSONArray();
+//        jsonGraph.put("edges", edgesArray);
+//        jsonGraph.put("vertices", verticesArray);
+//
+//        // Get the graph of the namespace
+//        final Graph<Vertex, Edge<Vertex>> graph = graphService.getGraph(searchCriteria.getNamespace());
+//        if (graph != null) {
+//            jsonGraph.putAll(graph.asGenericGraph().getProperties());
+//        }
+//
+//        // TODO MVR this is duplicated, but for now okay
+//        resolvedVertices.stream().forEach(vertex -> {
+//            final GenericVertex genericVertex = vertex.asGenericVertex();
+//            enrichmentProcessor.enrich(vertex); // force enrichment at this point for the whole vertex
+//
+//            // At this point we store the computed values accordingly
+//            final List<EnrichedField> fields = enrichmentProcessor.getEnrichableFields(vertex);
+//            fields.forEach(ef -> {
+//                if (!ef.isNull(vertex)) {
+//                    genericVertex.setComputedProperty(ef.getEnrichedAnnotation().name(), ef.getValue(vertex));
+//                }
+//            });
+//
+//            final Map<String, Object> properties = new HashMap<>();
+//            properties.putAll(genericVertex.getProperties());
+//            properties.putAll(genericVertex.getComputedProperties());
+//            verticesArray.add(properties);
+//        });
+//
+//        return jsonGraph;
+//    }
+
+    private JSONObject convert(Graph<Vertex, Edge<Vertex>> graph) {
         final JSONObject jsonGraph = new JSONObject();
         final JSONArray edgesArray = new JSONArray();
         final JSONArray verticesArray = new JSONArray();
@@ -113,49 +173,6 @@ public class GraphRestService {
             });
         }
         return jsonGraph;
-    }
-
-    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="suggest/{namespace}", consumes = MediaType.TEXT_PLAIN_VALUE)
-    public List<SearchSuggestion> makeSuggestions(@PathVariable(name="namespace") String namespace, @RequestBody String input) {
-        return graphSearchService.getSuggestions(namespace, input);
-    }
-
-    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, path="search", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public JSONObject resolve(@RequestBody SearchCriteria searchCriteria) {
-        final List<Vertex> resolvedVertices = graphSearchService.search(searchCriteria);
-        final JSONObject jsonGraph = new JSONObject();
-        final JSONArray edgesArray = new JSONArray();
-        final JSONArray verticesArray = new JSONArray();
-        jsonGraph.put("edges", edgesArray);
-        jsonGraph.put("vertices", verticesArray);
-
-        // Get the graph of the namespace
-        final Graph<Vertex, Edge<Vertex>> graph = graphService.getGraph(searchCriteria.getNamespace());
-        if (graph != null) {
-            jsonGraph.putAll(graph.asGenericGraph().getProperties());
-        }
-
-        // TODO MVR this is duplicated, but for now okay
-        resolvedVertices.stream().forEach(vertex -> {
-            final GenericVertex genericVertex = vertex.asGenericVertex();
-            enrichmentProcessor.enrich(vertex); // force enrichment at this point for the whole vertex
-
-            // At this point we store the computed values accordingly
-            final List<EnrichedField> fields = enrichmentProcessor.getEnrichableFields(vertex);
-            fields.forEach(ef -> {
-                if (!ef.isNull(vertex)) {
-                    genericVertex.setComputedProperty(ef.getEnrichedAnnotation().name(), ef.getValue(vertex));
-                }
-            });
-
-            final Map<String, Object> properties = new HashMap<>();
-            properties.putAll(genericVertex.getProperties());
-            properties.putAll(genericVertex.getComputedProperties());
-            verticesArray.add(properties);
-        });
-
-        return jsonGraph;
-
     }
 
 }

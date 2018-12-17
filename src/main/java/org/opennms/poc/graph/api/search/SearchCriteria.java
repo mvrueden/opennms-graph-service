@@ -46,6 +46,17 @@ public class SearchCriteria {
     // The context
     private String context;
 
+    public SearchCriteria() {
+
+    }
+
+    public SearchCriteria(final SearchSuggestion suggestion, final String namespace) {
+        this.providerId = suggestion.getProvider();
+        this.context = suggestion.getContext();
+        this.criteria = suggestion.getLabel();
+        this.namespace = namespace;
+    }
+
     public String getProviderId() {
         return providerId;
     }

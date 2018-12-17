@@ -30,9 +30,7 @@ package org.opennms.poc.graph.api;
 
 import org.opennms.poc.graph.api.generic.GenericVertex;
 
-public interface Vertex {
-    String getNamespace();
-    String getId();
+public interface Vertex extends VertexRef {
 
     GenericVertex asGenericVertex();
 }

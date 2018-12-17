@@ -26,49 +26,14 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api;
+package org.opennms.poc.graph.api.context;
 
-import java.util.Collection;
-import java.util.List;
+import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Graph;
+import org.opennms.poc.graph.api.Vertex;
 
-import org.opennms.poc.graph.api.generic.GenericGraph;
-import org.opennms.poc.graph.api.info.GraphInfo;
-
-public interface Graph<V extends Vertex, E extends Edge<V>> extends GraphInfo {
-    List<V> getVertices();
-
-    List<E> getEdges();
-
+public interface GraphContext<V extends Vertex, E extends Edge<V>, G extends Graph<V, E>> {
     String getNamespace();
-
-    void addEdges(Collection<E> edges);
-
-    void addVertices(Collection<V> vertices);
-
-    void addVertex(V vertex);
-    void addEdge(E edge);
-
-    void removeEdge(E edge);
-    void removeVertex(V vertex);
-
-    // TODO MVR make this more generic...
-    V getVertex(String id);
-
-    E getEdge(String id);
-
-    List<String> getVertexIds();
-    List<String> getEdgeIds();
-
-    // TODO MVR also provide List<String> vertexIds, int szl method
-    Graph<V,E> getSnapshot(Collection<V> verticesInFocus, int szl);
-
-    List<V> resolveVertices(Collection<String> vertexIds);
-    List<E> resolveEdges(Collection<String> edgeIds);
-    Collection<V> getNeighbors(V eachVertex);
-    Collection<E> getConnectingEdges(V eachVertex);
-
-    List<Vertex> getDefaultFocus();
-
-    GenericGraph asGenericGraph();
-
+    String getContainerId();
+    G getGraph(); // should load it at this point
 }

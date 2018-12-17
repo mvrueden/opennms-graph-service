@@ -29,19 +29,26 @@
 package org.opennms.poc.graph.api.simple;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.context.DefaultGraphContext;
+import org.opennms.poc.graph.api.focus.Focus;
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.impl.SemanticZoomLevelTransformer;
+
+import edu.uci.ics.jung.graph.DirectedSparseGraph;
 
 // TODO MVR enforce namespace
 // TODO MVR this is basically a copy of GenericGraph :'(
@@ -49,8 +56,9 @@ import org.opennms.poc.graph.api.info.GraphInfo;
 // and as well as adding different edges with different source/target vertices, should add each vertex only once,
 // maybe not here, but at some point that check should be implemented)
 public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implements Graph<V, E> {
-    private final List<V> vertices = new ArrayList<>();
-    private final List<E> edges = new ArrayList<>();
+
+    private DirectedSparseGraph<V, E> jungGraph = new DirectedSparseGraph<>();
+
     private final String namespace;
     private final Class<? extends SimpleVertex> vertexType;
 
@@ -59,6 +67,9 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
 
     private final Map<String, V> vertexToIdMap = new HashMap<>();
     private final Map<String, E> edgeToIdMap = new HashMap<>();
+
+    // A calculation of the focus
+    private Focus focusStrategy;
 
     public SimpleGraph(String namespace) {
         this(namespace, SimpleVertex.class);
@@ -71,12 +82,16 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
 
     @Override
     public List<V> getVertices() {
-        return Collections.unmodifiableList(vertices);
+        // TODO MVR use junggraph.getVetices instead. However addEdge is adding the edges if not in same namespace
+        // We have to figure out a workaround for that somehow
+        return new ArrayList<>(vertexToIdMap.values());
     }
 
     @Override
     public List<E> getEdges() {
-        return Collections.unmodifiableList(edges);
+        // TODO MVR use junggraph.getEdges instead. However addEdge is adding the edges if not in same namespace
+        // We have to figure out a workaround for that somehow
+        return new ArrayList<>(edgeToIdMap.values());
     }
 
     @Override
@@ -99,6 +114,18 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
         return vertexType;
     }
 
+    @Override
+    public List<Vertex> getDefaultFocus() {
+        if (focusStrategy != null) {
+            return focusStrategy.getFocus(new DefaultGraphContext(this)).stream().map(vr -> vertexToIdMap.get(vr.getId())).collect(Collectors.toList());
+        }
+        return new ArrayList<>();
+    }
+
+    public void setFocusStrategy(Focus focusStrategy) {
+        this.focusStrategy = focusStrategy;
+    }
+
     public void setLabel(String label) {
         this.label = label;
     }
@@ -108,61 +135,60 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
     }
 
     @Override
-    public void addEdges(List<E> edges) {
+    public void addEdges(Collection<E> edges) {
         for (E eachEdge : edges) {
             addEdge(eachEdge);
         }
     }
 
     @Override
-    public void addVertices(List<V> vertices) {
+    public void addVertices(Collection<V> vertices) {
         for (V eachVertex : vertices) {
             addVertex(eachVertex);
         }
     }
 
-
     @Override
     public void addVertex(V vertex) {
         Objects.requireNonNull(vertex);
         Objects.requireNonNull(vertex.getId());
-        if (vertices.contains(vertex)) return; // already added
+        if (jungGraph.containsVertex(vertex)) return; // already added
+        jungGraph.addVertex(vertex);
         vertexToIdMap.put(vertex.getId(), vertex);
-        vertices.add(vertex);
     }
 
     @Override
     public void addEdge(E edge) {
         Objects.requireNonNull(edge);
         Objects.requireNonNull(edge.getId());
-        if (edges.contains(edge)) return; // already added
+        if (jungGraph.containsEdge(edge)) return; // already added
         if (edge.getSource().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getSource().getId()) == null) {
             addVertex(edge.getSource());
         }
         if (edge.getTarget().getNamespace().equalsIgnoreCase(getNamespace()) && getVertex(edge.getTarget().getId()) == null) {
             addVertex(edge.getTarget());
         }
+        jungGraph.addEdge(edge, edge.getSource(), edge.getTarget());
         edgeToIdMap.put(edge.getId(), edge);
-        edges.add(edge);
     }
 
     @Override
     public void removeEdge(E edge) {
         Objects.requireNonNull(edge);
+        jungGraph.removeEdge(edge);
         edgeToIdMap.remove(edge.getId());
-        edges.remove(edge);
     }
 
     @Override
     public void removeVertex(V vertex) {
         Objects.requireNonNull(vertex);
+        jungGraph.removeVertex(vertex);
         vertexToIdMap.remove(vertex.getId());
-        vertices.remove(vertex);
     }
 
     @Override
     public V getVertex(String id) {
-        return getVertices().stream().filter(v -> v.getId().equals(id)).findAny().orElse(null);
+        return vertexToIdMap.get(id);
     }
 
     @Override
@@ -180,12 +206,47 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
         return edgeToIdMap.keySet().stream().sorted().collect(Collectors.toList());
     }
 
+    // TODO MVR this is not ideal... we should probably just create a graph from an info object instead
     public void applyInfo(GraphInfo info) {
         if (!info.getNamespace().equalsIgnoreCase(namespace)) {
             throw new IllegalArgumentException("Cannot apply given info due to mismatched namespace");
         }
         setLabel(info.getLabel());
         setDescription(info.getDescription());
+    }
+
+    @Override
+    public List<V> resolveVertices(Collection<String> vertexIds) {
+        final List<V> collect = vertexIds.stream().map(vid -> vertexToIdMap.get(vid)).filter(v -> v != null).collect(Collectors.toList());
+        return collect;
+    }
+
+    @Override
+    public List<E> resolveEdges(Collection<String> vertexIds) {
+        final List<E> collect = vertexIds.stream().map(eid -> edgeToIdMap.get(eid)).collect(Collectors.toList());
+        return collect;
+    }
+
+    @Override
+    public Collection<V> getNeighbors(V eachVertex) {
+        return jungGraph.getNeighbors(eachVertex);
+    }
+
+    @Override
+    public Collection<E> getConnectingEdges(V eachVertex) {
+        final Set<E> edges = new HashSet<>();
+        edges.addAll(jungGraph.getInEdges(eachVertex));
+        edges.addAll(jungGraph.getOutEdges(eachVertex));
+        return edges;
+    }
+
+    @Override
+    public Graph<V, E> getSnapshot(Collection<V> verticesInFocus, int szl) {
+        return new SemanticZoomLevelTransformer(verticesInFocus, szl).transform(this, () -> {
+            final SimpleGraph<SimpleVertex, SimpleEdge<SimpleVertex>> snapshotGraph = new SimpleGraph<>(getNamespace());
+            applyInfo(SimpleGraph.this);
+            return snapshotGraph;
+        });
     }
 
     @Override

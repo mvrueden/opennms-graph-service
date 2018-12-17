@@ -31,6 +31,7 @@ package org.opennms.poc.graph.api.simple;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Edge;
+import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.generic.GenericEdge;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 
@@ -48,6 +49,16 @@ public class SimpleEdge<V extends SimpleVertex> implements Edge<V> {
         this.source = Objects.requireNonNull(source);
         this.target = Objects.requireNonNull(target);
         this.namespace = source.getNamespace();
+        this.id = source.getId() + "->" + target.getId();
+    }
+
+    // Convenient method to add an adge from the given graph. Source and Target Vertices are looked up using the given sourceId/targetId
+    public SimpleEdge(Graph<V, SimpleEdge<V>> graph, String sourceId, String targetId) {
+        Objects.requireNonNull(graph);
+        this.source = Objects.requireNonNull(graph.getVertex(sourceId));
+        this.target = Objects.requireNonNull(graph.getVertex(targetId));
+        this.namespace = graph.getNamespace();
+        this.id = source.getId() + "->" + target.getId();
     }
 
     @Override

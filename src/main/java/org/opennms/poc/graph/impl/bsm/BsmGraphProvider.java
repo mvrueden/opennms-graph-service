@@ -38,6 +38,7 @@ import org.opennms.netmgt.bsm.service.model.graph.GraphVertex;
 import org.opennms.poc.graph.api.Graph;
 import org.opennms.poc.graph.api.GraphNotificationService;
 import org.opennms.poc.graph.api.GraphProvider;
+import org.opennms.poc.graph.api.focus.FocusStrategy;
 import org.opennms.poc.graph.api.info.DefaultGraphInfo;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.api.simple.SimpleGraph;
@@ -72,6 +73,7 @@ public class BsmGraphProvider implements GraphProvider, BusinessServiceStateChan
             addVertex(sourceGraph, targetGraph, topLevelBusinessService, null);
         }
         targetGraph.applyInfo(graphInfo);
+        targetGraph.setFocusStrategy(FocusStrategy.ALL);
         return targetGraph;
     }
 

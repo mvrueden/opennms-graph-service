@@ -28,56 +28,7 @@
 
 package org.opennms.poc.graph.api;
 
-
-import java.util.List;
-
-import org.opennms.poc.graph.api.search.SearchCriteria;
-
-import com.google.common.collect.Lists;
-
-public class Query {
-
-    // selected container
-    private String containerId;
-
-    // graph namespace
-    // TODO MVR each SearchCriteria already has a namespace, however, we apply it here again, as we may require it
-    // and may not have a SearchCriteria defined
-    private String namespace;
-
-    private int szl = 1; // default is always 1
-
-    private List<SearchCriteria> searchCriteria = Lists.newArrayList();
-
-    public int getSzl() {
-        return szl;
-    }
-
-    public void setSzl(int szl) {
-        this.szl = szl;
-    }
-
-    public String getContainerId() {
-        return containerId;
-    }
-
-    public void setContainerId(String containerId) {
-        this.containerId = containerId;
-    }
-
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
-
-    public List<SearchCriteria> getSearchCriteria() {
-        return searchCriteria;
-    }
-
-    public void setSearchCriteria(List<SearchCriteria> searchCriteria) {
-        this.searchCriteria = searchCriteria;
-    }
+public interface VertexRef {
+    String getNamespace();
+    String getId();
 }
