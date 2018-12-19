@@ -29,8 +29,9 @@
 package org.opennms.poc.graph.api.persistence;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.persistence.CascadeType;
@@ -40,7 +41,9 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.OneToMany;
+import javax.persistence.Transient;
 
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Where;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 
@@ -53,32 +56,44 @@ public class GraphEntity extends AbstractGraphElementEntity {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinTable(name = "graph_elements_relations",
-            joinColumns = { @JoinColumn(name = "graph_id", referencedColumnName = "id") },
-            inverseJoinColumns = { @JoinColumn(name="element_id", referencedColumnName = "id") }
+            joinColumns = { @JoinColumn(name = "graph_id", referencedColumnName = "id", nullable = false, updatable = false) },
+            inverseJoinColumns = { @JoinColumn(name="element_id", referencedColumnName = "id", nullable = false, updatable = false) }
     )
     @Where(clause="TYPE='vertex'")
+    @BatchSize(size=1000)
     private List<VertexEntity> vertices = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinTable(name = "graph_elements_relations",
-            joinColumns = { @JoinColumn(name = "graph_id", referencedColumnName = "id") },
-            inverseJoinColumns = { @JoinColumn(name="element_id", referencedColumnName = "id") }
+            joinColumns = { @JoinColumn(name = "graph_id", referencedColumnName = "id", nullable = false, updatable = false) },
+            inverseJoinColumns = { @JoinColumn(name="element_id", referencedColumnName = "id", nullable = false, updatable = false) }
     )
     @Where(clause="TYPE='edge'")
+    @BatchSize(size=1000)
     private List<EdgeEntity> edges = new ArrayList<>();
+
+    // TODO MVR verify that this is properly instantiated when loading data via hibernate
+    @Transient
+    private Map<String, VertexEntity> vertexIdMap = new HashMap<>();
 
     public String getNamespace() {
         return namespace;
     }
 
     public String getDescription() {
-        // TODO MVR NPE
-        return getProperty(GenericProperties.DESCRIPTION).getValue();
+        final PropertyEntity property = getProperty(GenericProperties.DESCRIPTION);
+        if (property != null) {
+            return property.getValue();
+        }
+        return null;
     }
 
     public String getLabel() {
-        // TODO MVR NPE
-        return getProperty(GenericProperties.LABEL).getValue();
+        final PropertyEntity property = getProperty(GenericProperties.LABEL);
+        if (property != null) {
+            return property.getValue();
+        }
+        return null;
     }
 
     public void setNamespace(String namespace) {
@@ -99,13 +114,15 @@ public class GraphEntity extends AbstractGraphElementEntity {
 
     public void setVertices(List<VertexEntity> vertices) {
         this.vertices = vertices;
+        vertices.forEach(v -> {
+            final String vertexId = v.getProperty(GenericProperties.ID).getValue();
+            vertexIdMap.put(vertexId, v);
+        });
     }
 
     public VertexEntity getVertexByVertexId(String id) {
         Objects.requireNonNull(id);
-        return vertices.stream()
-                .filter(v -> v.getProperty(GenericProperties.ID).getValue().equalsIgnoreCase(id))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException());
+        final VertexEntity vertexEntity = vertexIdMap.get(id);
+        return vertexEntity;
     }
 }

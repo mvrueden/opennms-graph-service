@@ -28,10 +28,13 @@
 
 package org.opennms.poc.graph.api.enrichment;
 
+import java.util.List;
+import java.util.Map;
+
 import org.opennms.poc.graph.api.Vertex;
 
 // TODO MVR make it namespace aware?
 public interface Enrichment<T> {
 
-    T compute(Vertex vertex);
+    Map<Vertex, T> compute(List<Vertex> vertices);
 }

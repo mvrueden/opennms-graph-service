@@ -67,6 +67,10 @@ public class NodeIdRef implements NodeRef {
         return nodeInfo;
     }
 
+    public int getNodeId() {
+        return nodeId;
+    }
+
     public static NodeInfo createInfo(OnmsNode node) {
         final NodeInfo nodeInfo = new NodeInfo();
         nodeInfo.setLocation(node.getLocation().getLocationName());

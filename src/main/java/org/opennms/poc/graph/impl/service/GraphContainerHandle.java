@@ -81,9 +81,9 @@ public class GraphContainerHandle implements GraphContainerProvider {
         return provider.getContainerInfo();
     }
 
-    // TODO MVR here we reload hard every 5 seconds
+    // TODO MVR here we reload hard every 5 minutes
     private boolean requireReload() {
-        if (lastReloadTime == 0 || System.currentTimeMillis() - lastReloadTime >= 5000) {
+        if (lastReloadTime == 0 || System.currentTimeMillis() - lastReloadTime >= 5 * 60 * 1000) {
             return true;
         }
         return false;
@@ -115,11 +115,14 @@ public class GraphContainerHandle implements GraphContainerProvider {
 
         // Run
         executorService.submit(() -> {
+            final long start = System.currentTimeMillis();
             try {
                 final GraphContainer graphContainer = provider.loadGraphContainer();
                 completableFuture.complete(graphContainer);
             } catch (Exception ex) {
                 completableFuture.completeExceptionally(ex);
+            } finally {
+                LOG.warn("Reloaded {} in {} ms", provider.getContainerInfo().getNamespaces(), System.currentTimeMillis() - start);
             }
         });
     }

@@ -45,7 +45,11 @@ public interface GraphRepository {
 
     GenericGraph findByNamespace(String namespace);
 
+    GraphInfo findGraphInfo(String namespace);
+
     <G extends Graph<V, E>, V extends Vertex, E extends Edge<V>> G findByNamespace(final String namespace, final Function<GenericGraph, G> transformer);
 
     List<GraphInfo> findAll();
+
+    void deleteByNamespace(String namespace);
 }

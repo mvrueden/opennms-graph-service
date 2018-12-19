@@ -30,11 +30,15 @@ package org.opennms.poc.graph.impl.enrichment;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import org.opennms.netmgt.dao.api.NodeDao;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.aware.NodeAware;
 import org.opennms.poc.graph.api.enrichment.Enrichment;
 import org.opennms.poc.graph.api.info.NodeInfo;
+import org.opennms.poc.graph.impl.NodeInfoCache;
 import org.opennms.poc.graph.impl.refs.NodeRef;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -43,19 +47,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Scope(SCOPE_PROTOTYPE) // TODO MVR is this correct? We need probably multiple and need to ensure they are thread safe
-public class NodeResolutionEnrichment implements Enrichment<NodeInfo> {
+public class NodeInfoEnrichment implements Enrichment<NodeInfo> {
 
     @Autowired
-    private NodeDao nodeDao;
+    private NodeInfoCache cache;
 
     @Override
     @Transactional
-    public NodeInfo compute(Vertex vertex) {
-        if (!(vertex instanceof NodeAware)) {
-            throw new IllegalArgumentException("Provided vertex must be of type NodeRefAware in order to resolve the node");
-        }
-        final NodeRef nodeRef = ((NodeAware) vertex).getNodeRef();
-        final NodeInfo resolve = nodeRef.resolve(nodeDao);
-        return resolve;
+    public Map<Vertex, NodeInfo> compute(List<Vertex> vertices) {
+        vertices.forEach(vertex -> {
+            if (!(vertex instanceof NodeAware)) {
+                throw new IllegalArgumentException("Provided vertices must be of type NodeRefAware in order to resolve the node");
+            }
+        });
+
+        final Map<Vertex, NodeInfo> result = vertices.stream()
+                .filter(v -> ((NodeAware) v).getNodeRef() != null)
+                .collect(Collectors.toMap(v -> v,
+                    v -> {
+                        final NodeRef nodeRef = ((NodeAware) v).getNodeRef();
+                        return cache.getNodeInfo(nodeRef);
+                    })) ;
+        return result;
     }
 }

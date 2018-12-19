@@ -41,7 +41,7 @@ public class EnrichedVertexExample extends SimpleVertex implements NodeAware {
 
     private Integer nodeId;
 
-    @Enriched(name = "node", enrichment = NodeResolutionEnrichment.class)
+    @Enriched(name = "node", enrichment = NodeInfoEnrichment.class)
     private NodeInfo nodeInfo;
 
     @Enriched(name = "severity", enrichment = NodeSeverityEnrichment.class)

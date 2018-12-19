@@ -46,6 +46,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 
+import org.hibernate.annotations.BatchSize;
+
 @Entity(name="graph_elements")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name="type", discriminatorType = DiscriminatorType.STRING)
@@ -58,7 +60,8 @@ public class AbstractGraphElementEntity {
     private Long id;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "element_id", referencedColumnName = "id")
+    @JoinColumn(name = "element_id", referencedColumnName = "id", nullable = false, updatable = false)
+    @BatchSize(size=1000)
     private List<PropertyEntity> properties = new ArrayList<>();
 
     public Long getId() {

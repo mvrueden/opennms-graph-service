@@ -1,15 +1,15 @@
 package org.opennms.poc.graph;
 
-import static org.opennms.poc.graph.impl.partial.PartialGraphUpdater.NAMESPACE;
+import static org.opennms.poc.graph.impl.vmware.VmwareImporter.NAMESPACE;
 
 import java.util.HashMap;
 
 import org.opennms.features.graphml.model.InvalidGraphException;
 import org.opennms.poc.graph.api.GraphProvider;
-import org.opennms.poc.graph.api.persistence.GraphRepository;
 import org.opennms.poc.graph.impl.bsm.BsmGraphProvider;
 import org.opennms.poc.graph.impl.graphml.GraphmlGraphContainerProvider;
 import org.opennms.poc.graph.impl.nodes.NodeGraphProvider;
+import org.opennms.poc.graph.impl.nodes.NodePerformanceTestGraphProvider;
 import org.opennms.poc.graph.impl.partial.PartialGraphListener;
 import org.opennms.poc.graph.impl.service.DefaultGraphService;
 import org.opennms.poc.graph.impl.slow.SlowGraphProvider;
@@ -53,17 +53,18 @@ public class GraphApplication {
 	private SlowGraphProvider slowGraphProvider;
 
 	@Autowired
-	private GraphRepository graphRepository;
+	private NodePerformanceTestGraphProvider nodePerformanceTestGraphProvider;
 
 	@Scheduled(initialDelay = 5000, fixedDelay = 60 * 1000 * 60 * 24)
 	public void initializeGraphProvider() throws InvalidGraphException {
 		graphService.onBind(new GraphmlGraphContainerProvider(getClass().getResourceAsStream("/graphml-graph.xml")), new HashMap());
-		graphService.onBind((GraphProvider) new VmwareGraphListener(),  ImmutableMap.of("namespace", VmwareImporter.NAMESPACE));
+		graphService.onBind((GraphProvider) new VmwareGraphListener(),  ImmutableMap.of("namespace", NAMESPACE));
 		graphService.onBind(vmwareImporter, new HashMap<>());
 		graphService.onBind(bsmGraphProvider, new HashMap());
 		graphService.onBind(nodeGraphProvider, new HashMap<>());
 		graphService.onBind((GraphProvider) new PartialGraphListener(NAMESPACE), new HashMap<>());
 		graphService.onBind(slowGraphProvider, new HashMap<>());
+		graphService.onBind(nodePerformanceTestGraphProvider, new HashMap<>());
 //		graphService.onBind(event -> {
 //			LOG.info("New event of type {} received.", event.getType());
 ////			final Graph g = graphService.getGraph(NAMESPACE);

@@ -47,6 +47,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 // TODO MVR define test scope little smaller (only enrichment processor + compution is required)
 public class EnrichedVertexTest {
 
+    private int nodeId = 100002; // TODO MVR create in test instead of expecting it to be there
+
     @Autowired
     private EnrichmentProcessor processor;
 
@@ -55,7 +57,7 @@ public class EnrichedVertexTest {
 
     @Test
     public void verifyEnrichment() {
-        final EnrichedVertexExample vertex = new EnrichedVertexExample("1", 18);
+        final EnrichedVertexExample vertex = new EnrichedVertexExample("1", nodeId);
         Assert.assertNull(vertex.getNodeInfo());
         Assert.assertNull(vertex.getNodeSeverity());
 
@@ -68,7 +70,7 @@ public class EnrichedVertexTest {
     // The idea is, that an annotated field is automatically populated on access
     @Test
     public void verifyAutoEnrichmentOnAccess() throws NoSuchMethodException, IntrospectionException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        final EnrichedVertexExample vertex = vertexFactory.createVertex(EnrichedVertexExample.class, "1", 18);
+        final EnrichedVertexExample vertex = vertexFactory.createVertex(EnrichedVertexExample.class, "1", nodeId);
         Assert.assertEquals(NodeSeverity.Major, vertex.getNodeSeverity());
         Assert.assertNotNull(vertex.getNodeInfo());
     }

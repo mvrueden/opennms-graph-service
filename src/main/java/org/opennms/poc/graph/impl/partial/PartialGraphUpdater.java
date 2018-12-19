@@ -61,6 +61,7 @@ public class PartialGraphUpdater {
     public void simulateGraphUpdate() {
         final int N = 50;
         final Graph graph = graphService.getGraph(NAMESPACE);
+        if (graph == null) return;
         // No edges, create 2 links
         if (graph.getVertices().isEmpty()) {
             increasing = true;

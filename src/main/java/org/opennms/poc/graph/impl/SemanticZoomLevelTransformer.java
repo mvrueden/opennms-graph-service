@@ -56,6 +56,8 @@ public class SemanticZoomLevelTransformer<V extends Vertex, E extends Edge<V>, G
         final G snapshot = snapshotGraphFactory.get();
         snapshot.addVertices(verticesInFocus);
 
+        final List<Vertex> alreadyProcessedVertices = new ArrayList<>();
+
         // Determine all vertices according to szl
         final List<V> verticesToProcess = Lists.newArrayList(verticesInFocus);
         for (int i=0; i<szl; i++) {
@@ -65,8 +67,14 @@ public class SemanticZoomLevelTransformer<V extends Vertex, E extends Edge<V>, G
                 snapshot.addVertices(neighbors);
 
                 // Mark for procession
-                tmpVertices.addAll(neighbors);
+                for (V eachNeighbor : neighbors) {
+                    // but only if not already processed or are processing in this iteration
+                    if (!alreadyProcessedVertices.contains(eachNeighbor) && !verticesToProcess.contains(eachNeighbor)) {
+                        tmpVertices.add(eachNeighbor);
+                    }
+                }
             }
+            alreadyProcessedVertices.addAll(verticesToProcess);
             verticesToProcess.clear();
             verticesToProcess.addAll(tmpVertices);
         }

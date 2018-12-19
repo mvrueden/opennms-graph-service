@@ -35,7 +35,7 @@ import org.opennms.poc.graph.api.enrichment.Enriched;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.info.NodeInfo;
-import org.opennms.poc.graph.impl.enrichment.NodeResolutionEnrichment;
+import org.opennms.poc.graph.impl.enrichment.NodeInfoEnrichment;
 import org.opennms.poc.graph.impl.refs.NodeRef;
 import org.opennms.poc.graph.impl.refs.NodeRefs;
 
@@ -49,7 +49,7 @@ public class SimpleVertex implements Vertex, NodeAware, LocationAware {
     // Either nodeId as string or foreignSource:foreignId combination
     private String nodeRefString;
 
-    @Enriched(name="node", enrichment = NodeResolutionEnrichment.class)
+    @Enriched(name="node", enrichment = NodeInfoEnrichment.class)
     private NodeInfo nodeInfo;
 
     public SimpleVertex(String namespace, String id) {
@@ -104,6 +104,9 @@ public class SimpleVertex implements Vertex, NodeAware, LocationAware {
         }
         if (getIconKey() != null) {
             vertex.setProperty(GenericProperties.ICON_KEY, getIconKey());
+        }
+        if (getNodeRefString() != null) {
+            vertex.setProperty(GenericProperties.NODE_REF, getNodeRefString());
         }
         return vertex;
     }

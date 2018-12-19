@@ -93,17 +93,27 @@ public class DefaultGraphRepository implements GraphRepository {
     }
 
     @Override
+    @Transactional
     public <V extends Vertex, E extends Edge<V>, G extends Graph<V, E>> void save(G graph) {
         Objects.requireNonNull(graph);
+        long start = System.currentTimeMillis();
+        System.out.println("Converting graph to generic graph");
         final GenericGraph genericGraph = graph.asGenericGraph();
+        System.out.println("DONE. Took " + (System.currentTimeMillis() - start) + "ms");
+        start = System.currentTimeMillis();
+        System.out.println("Converting to graph entity");
         final GraphEntity graphEntity = toEntity(genericGraph);
+        System.out.println("DONE. Took " + (System.currentTimeMillis() - start) + "ms");
 
         // Here we detect if a graph must be updated or persisted
         // This way we always detect changes even if the entity persisted was not received from the persistence context
         // in the first place.
         final GenericGraph persistedGraph = findByNamespace(graph.getNamespace());
         if (persistedGraph == null) {
+            System.out.println("ACTUALLY START PERSISTING NOW... WIU WIU WIU");
+            start = System.currentTimeMillis();
             accessor.save(graphEntity);
+            System.out.println("DONE. Took " + (System.currentTimeMillis() - start) + "ms");
         } else {
             final ChangeSet<GenericVertex, GenericEdge> changeSet = new ChangeSet<>(persistedGraph, genericGraph);
             if (changeSet.hasChanges()) {
@@ -136,6 +146,15 @@ public class DefaultGraphRepository implements GraphRepository {
     }
 
     @Override
+    public GraphInfo findGraphInfo(String namespace) {
+        List<GraphEntity> graphEntities = accessor.find("select ge from GraphEntity ge where ge.namespace = ?", namespace);
+        if (graphEntities == null || graphEntities.isEmpty()) {
+            return null;
+        }
+        return convert(graphEntities.get(0));
+    }
+
+    @Override
     public <G extends Graph<V, E>, V extends Vertex, E extends Edge<V>> G findByNamespace(String namespace, Function<GenericGraph, G> transformer) {
         Objects.requireNonNull(namespace);
         Objects.requireNonNull(transformer);
@@ -150,13 +169,17 @@ public class DefaultGraphRepository implements GraphRepository {
     @Override
     public List<GraphInfo> findAll() {
         final List<GraphEntity> graphs = accessor.find("Select g from GraphEntity g");
-        final List<GraphInfo> graphInfos = graphs.stream().map(g -> {
-            final DefaultGraphInfo graphInfo = new DefaultGraphInfo(g.getNamespace(), GenericVertex.class /* TODO MVR this is not correct */);
-            graphInfo.withDescription(g.getDescription());
-            graphInfo.withLabel(g.getLabel());
-            return graphInfo;
-        }).collect(Collectors.toList());
+        final List<GraphInfo> graphInfos = graphs.stream().map(g -> convert(g)).collect(Collectors.toList());
         return graphInfos;
+    }
+
+    @Override
+    public void deleteByNamespace(String namespace) {
+        // TODO MVR implement delete cascade automatically
+        final GenericGraph graph = findByNamespace(namespace);
+        if (graph != null) {
+            accessor.delete(graph);
+        }
     }
 
     private GenericGraph fromEntity(final GraphEntity graphEntity) {
@@ -199,6 +222,8 @@ public class DefaultGraphRepository implements GraphRepository {
         graphEntity.setProperties(convertToPropertyEntities(genericGraph.getProperties()));
 
         // Map Vertices
+        long start = System.currentTimeMillis();
+        System.out.println("\tConverting vertices");
         final List<VertexEntity> vertexEntities = genericGraph.getVertices().stream().map(genericVertex -> {
             final VertexEntity vertexEntity = new VertexEntity();
             final List<PropertyEntity> vertexProperties = convertToPropertyEntities(genericVertex.getProperties());
@@ -206,8 +231,11 @@ public class DefaultGraphRepository implements GraphRepository {
             return vertexEntity;
         }).collect(Collectors.toList());
         graphEntity.setVertices(vertexEntities);
+        System.out.println("\tDONE. Took " + (System.currentTimeMillis() - start) + "ms");
 
         // Map Edges
+        start = System.currentTimeMillis();
+        System.out.println("\tConverting edges");
         final List<EdgeEntity> edgeEntities = genericGraph.getEdges().stream().map(genericEdge -> {
             final EdgeEntity edgeEntity = new EdgeEntity();
             edgeEntity.setSource(graphEntity.getVertexByVertexId(genericEdge.getSource().getId()));
@@ -217,6 +245,7 @@ public class DefaultGraphRepository implements GraphRepository {
             return edgeEntity;
         }).collect(Collectors.toList());
         graphEntity.setEdges(edgeEntities);
+        System.out.println("\tDONE. Took " + (System.currentTimeMillis() - start) + "ms");
         return graphEntity;
     }
 
@@ -247,5 +276,12 @@ public class DefaultGraphRepository implements GraphRepository {
                                         : converterMap.get(propertyEntity.getType());
         final Object value = converter.toValue(propertyEntity.getType(), propertyEntity.getValue());
         return value;
+    }
+
+    private GraphInfo convert(GraphEntity graphEntity) {
+        final DefaultGraphInfo graphInfo = new DefaultGraphInfo(graphEntity.getNamespace(), GenericVertex.class /* TODO MVR this is not correct */);
+        graphInfo.withDescription(graphEntity.getDescription());
+        graphInfo.withLabel(graphEntity.getLabel());
+        return graphInfo;
     }
 }

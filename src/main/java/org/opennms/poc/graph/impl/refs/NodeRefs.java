@@ -35,11 +35,14 @@ public class NodeRefs {
     }
 
     public static NodeRef from(String input) {
-        if (input.contains(":")) {
-            final String[] x = input.split(":");
-            return new ForeignIdForeignSourceRef(x[0], x[1]);
-        } else {
-            return new NodeIdRef(Integer.parseInt(input));
+        if (input != null) {
+            if (input.contains(":")) {
+                final String[] x = input.split(":");
+                return new ForeignIdForeignSourceRef(x[0], x[1]);
+            } else {
+                return new NodeIdRef(Integer.parseInt(input));
+            }
         }
+        return null;
     }
 }

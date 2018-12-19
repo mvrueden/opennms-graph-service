@@ -60,6 +60,7 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
     private DirectedSparseGraph<GenericVertex, GenericEdge> jungGraph = new DirectedSparseGraph<>();
     private final Map<String, GenericVertex> vertexToIdMap = new HashMap<>();
     private final Map<String, GenericEdge> edgeToIdMap = new HashMap<>();
+    private final Map<NodeRef, GenericVertex> nodeRefMap = new HashMap<>();
     private Focus focusStrategy;
 
     public GenericGraph() {}
@@ -107,6 +108,11 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
             return focusStrategy.getFocus(new DefaultGraphContext(this)).stream().map(vr -> vertexToIdMap.get(vr.getId())).collect(Collectors.toList());
         }
         return Lists.newArrayList();
+    }
+
+    @Override
+    public Vertex getVertex(NodeRef nodeRef) {
+        return nodeRefMap.get(nodeRef);
     }
 
     @Override
@@ -206,6 +212,9 @@ public class GenericGraph extends AbstractElement implements Graph<GenericVertex
         if (vertexToIdMap.containsKey(vertex.getId())) return; // already added
         vertexToIdMap.put(vertex.getId(), vertex);
         jungGraph.addVertex(vertex);
+        if (vertex.getProperty(GenericProperties.NODE_REF) != null) {
+            nodeRefMap.put(NodeRefs.from(vertex.getProperty(GenericProperties.NODE_REF)), vertex);
+        }
     }
 
     @Override

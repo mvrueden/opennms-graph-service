@@ -39,11 +39,11 @@ import javax.persistence.ManyToOne;
 public class EdgeEntity extends AbstractGraphElementEntity {
 
     @ManyToOne(optional = false, cascade = CascadeType.ALL)
-    @JoinColumn(name="source_vertex_id", referencedColumnName = "id")
+    @JoinColumn(name="source_vertex_id", referencedColumnName = "id", nullable = false, updatable = false)
     private VertexEntity source;
 
     @ManyToOne(optional = false, cascade = CascadeType.ALL)
-    @JoinColumn(name="target_vertex_id", referencedColumnName = "id")
+    @JoinColumn(name="target_vertex_id", referencedColumnName = "id", nullable = false, updatable = false)
     private VertexEntity target;
 
     public VertexEntity getSource() {

@@ -98,3 +98,87 @@ resolving either by node id or location:foreignSource:foreignId.
 In the original topology implementation, vertices and eges contain ui information, such as tooltip or icons, etc.
 However this should be implemented in the ui layer itself, e.g. a renderer for each namespace/vertex/edge.
 Meaning, each vertex or edge should contain enough information to visualize it accordingly.
+
+=== Problems
+
+- GenericGraph => specific Graph (e.g. SimpleGraph) conversion when persisting is a problem
+- Also when loading data from a repository (e.g. database) the graph info is not yet available, what to do in this case?
+
+=== Performance
+
+All measurements are very rough, on a not optimized system with a not optimized postgresql
+
+- Writing a graph with 100k nodes and 100k edges takes roughly about 1 Minute.
+  Where conversion from Graph -> GenericGraph takes half a second and the conversion from the GenericGraph to a GraphEntity roughly the same amount of time
+  Afterwards persisting takes ~30-40 seconds and flushing the session again ~30-60 seconds.
+- Loading the same graph takes about 35 (not enriching the graph with node information)
+  ` Reloaded [nodes-performance] in 33218 ms`.
+  In comparison loading all nodes takes about 50 seconds `Reloaded [nodes] in 48179 ms`.
+  However that only loads the `OnmsNode` object, not including lazy loading relations, such as categories or ip interfaces.
+- Searching for attributes of vertices in the graph  with 100k nodes will return very quickly (no performance impact detected)
+- Searching for categories which match 60% of the graph will return also very quickly (however the noderef vertex association is cached in the graph, otherwise it takes forever)
+
+=== Generate Graph
+The `GenerateGraphTest` will create a graph, as follows:
+
+ * Create a Router Node
+   * Name `Router <index>`
+   * Add to Category `Routers,Test,Production,Development`
+   * Add 5 interfaces
+ * For each Router create 3 servers
+    * Name `Server <index>`
+    * Add all to Category `Servers`
+    * Add one to Category `Test`
+    * Add one to Category `Production`
+    * Add one to Category `Development`
+ * For each Router create 1 printer
+    * Name `Printer <index>`
+    * Add to category `Printers`
+    * Add to category `Test,Production,Development`
+
+
+At the end, create a graph based on the node definition above.
+Afterwards all Routers are connected to a dummy vertex.
+So the graph generated consists of `5 * ROUTER_NODE_COUNT + 1` vertices and `5 * ROUTER_NODE_COUNT` edges.
+
+=== SQL to create tables
+
+[source, sql]
+----
+drop table if exists graph_elements cascade;
+drop table if exists graph_attributes cascade;
+drop table if exists graph_elements_relations cascade;
+
+create table graph_elements (
+  id        bigint primary key,
+  type      varchar not null,
+  namespace varchar,
+  source_vertex_id bigint,
+  target_vertex_id bigint
+);
+alter table graph_elements add constraint fk_source_vertices foreign key (source_vertex_id) REFERENCES graph_elements (id) ON DELETE CASCADE ON UPDATE CASCADE;
+alter table graph_elements add constraint fk_target_vertices foreign key (target_vertex_id) REFERENCES graph_elements (id) ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE INDEX idx_fk_source_vertices ON graph_elements (source_vertex_id);
+CREATE INDEX idx_fk_target_vertices ON graph_elements (target_vertex_id);
+
+create table graph_attributes (
+  id bigint primary key,
+  name varchar not null,
+  type varchar not null,
+  value varchar,
+  element_id bigint
+);
+alter table graph_attributes add constraint fk_graph_attributes_element_id foreign key (element_id) REFERENCES graph_elements (id) ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE INDEX idx_fk_graph_attributes_element_id ON graph_attributes (element_id);
+
+create table graph_elements_relations (
+  graph_id bigint ,
+  element_id bigint,
+  PRIMARY KEY(graph_id, element_id)
+);
+alter table graph_elements_relations add constraint fk_graph_elements_relations_graph_id foreign key (graph_id) REFERENCES graph_elements (id) ON DELETE CASCADE ON UPDATE CASCADE;
+alter table graph_elements_relations add constraint fk_graph_elements_relations_element_id foreign key (element_id) REFERENCES graph_elements (id) ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE INDEX idx_fk_graph_elements_relations_graph_id ON graph_elements_relations (graph_id);
+CREATE INDEX idx_fk_graph_elements_relations_element_id ON graph_elements_relations (element_id);
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO opennms;
+----

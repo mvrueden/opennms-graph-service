@@ -47,6 +47,7 @@ import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.info.GraphInfo;
 import org.opennms.poc.graph.impl.SemanticZoomLevelTransformer;
+import org.opennms.poc.graph.impl.refs.NodeRef;
 
 import edu.uci.ics.jung.graph.DirectedSparseGraph;
 
@@ -67,6 +68,7 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
 
     private final Map<String, V> vertexToIdMap = new HashMap<>();
     private final Map<String, E> edgeToIdMap = new HashMap<>();
+    private final Map<NodeRef, V> nodeRefToVertexMap = new HashMap<>();
 
     // A calculation of the focus
     private Focus focusStrategy;
@@ -122,6 +124,11 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
         return new ArrayList<>();
     }
 
+    @Override
+    public Vertex getVertex(NodeRef nodeRef) {
+        return nodeRefToVertexMap.get(nodeRef);
+    }
+
     public void setFocusStrategy(Focus focusStrategy) {
         this.focusStrategy = focusStrategy;
     }
@@ -155,6 +162,10 @@ public class SimpleGraph<V extends SimpleVertex, E extends SimpleEdge<V>> implem
         if (jungGraph.containsVertex(vertex)) return; // already added
         jungGraph.addVertex(vertex);
         vertexToIdMap.put(vertex.getId(), vertex);
+
+        if (vertex.getNodeRef() != null) {
+            nodeRefToVertexMap.put(vertex.getNodeRef(), vertex);
+        }
     }
 
     @Override

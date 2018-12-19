@@ -33,6 +33,7 @@ import java.util.List;
 
 import org.opennms.poc.graph.api.generic.GenericGraph;
 import org.opennms.poc.graph.api.info.GraphInfo;
+import org.opennms.poc.graph.impl.refs.NodeRef;
 
 public interface Graph<V extends Vertex, E extends Edge<V>> extends GraphInfo {
     List<V> getVertices();
@@ -68,6 +69,8 @@ public interface Graph<V extends Vertex, E extends Edge<V>> extends GraphInfo {
     Collection<E> getConnectingEdges(V eachVertex);
 
     List<Vertex> getDefaultFocus();
+
+    Vertex getVertex(NodeRef nodeRef);
 
     GenericGraph asGenericGraph();
 

@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import org.opennms.core.criteria.CriteriaBuilder;
 import org.opennms.netmgt.dao.api.CategoryDao;
+import org.opennms.netmgt.dao.api.GenericPersistenceAccessor;
 import org.opennms.netmgt.model.OnmsCategory;
 import org.opennms.poc.graph.api.Edge;
 import org.opennms.poc.graph.api.Graph;
@@ -42,9 +43,13 @@ import org.opennms.poc.graph.api.aware.NodeAware;
 import org.opennms.poc.graph.api.search.SearchCriteria;
 import org.opennms.poc.graph.api.search.SearchProvider;
 import org.opennms.poc.graph.api.search.SearchSuggestion;
+import org.opennms.poc.graph.impl.refs.NodeRef;
+import org.opennms.poc.graph.impl.refs.NodeRefs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.common.collect.ImmutableMap;
 
 @Service
 public class CategorySearchProvider implements SearchProvider {
@@ -53,6 +58,9 @@ public class CategorySearchProvider implements SearchProvider {
 
     @Autowired
     private CategoryDao categoryDao;
+
+    @Autowired
+    private GenericPersistenceAccessor persistenceAccessor;
 
     @Override
     public boolean canSuggest(GraphService graphService, String namespace) {
@@ -75,11 +83,26 @@ public class CategorySearchProvider implements SearchProvider {
 
     @Override
     public List<Vertex> resolve(GraphService graphService, SearchCriteria searchCriteria) {
+        // Query data
+        final List<Object[]> nodeRefObjects = persistenceAccessor.executeNativeQuery("select distinct node.nodeid, node.foreignsource, node.foreignid from node\n" +
+                "  join category_node on node.nodeid = category_node.nodeid\n" +
+                "  join categories on category_node.categoryid = categories.categoryid\n" +
+                "  where categories.categoryname like :search", ImmutableMap.of("search", searchCriteria.getCriteria()));
+
+        // Convert to node refs
+        final List<NodeRef> nodeRefs = nodeRefObjects.stream().map(objects -> {
+            if (objects[1] != null && objects[2] != null) {
+                return NodeRefs.from(objects[1] + ":" + objects[2]);
+            }
+            return NodeRefs.from((Integer) objects[0]);
+        }).collect(Collectors.toList());
+
+        // Collect Vertices
         final Graph<Vertex, Edge<Vertex>> graph = graphService.getGraph(searchCriteria.getNamespace());
-        return graph.getVertices().stream()
-                .map(v -> (NodeAware) v)
-                .filter(v -> v.getNodeInfo() != null && v.getNodeInfo().getCategories().contains(searchCriteria.getCriteria()))
-                .map(v -> (Vertex) v)
+        final List<Vertex> verticesInCategory = nodeRefs.stream()
+                .map(nodeRef -> graph.getVertex(nodeRef))
+                .filter(v -> v != null)
                 .collect(Collectors.toList());
+        return verticesInCategory;
     }
 }
