@@ -26,15 +26,21 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.api.enrichment;
+package org.opennms.poc.graph.impl.enrichment;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Vertex;
+import org.opennms.poc.graph.api.enrichment.EnrichmentProcessor;
+import org.springframework.stereotype.Service;
 
-// TODO MVR make it namespace aware?
-public interface Enrichment<T> {
+@Service
+public class NodeSeverityEnrichmentProcessor implements EnrichmentProcessor<NodeSeverity> {
 
-    Map<Vertex, T> compute(List<Vertex> vertices);
+    @Override
+    public Map<Vertex, NodeSeverity> enrich(List<Vertex> vertices) {
+        return vertices.stream().collect(Collectors.toMap(v -> v, v -> NodeSeverity.Major));
+    }
 }

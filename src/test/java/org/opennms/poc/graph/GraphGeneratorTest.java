@@ -56,6 +56,27 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Lists;
 
+/**
+ * This test  will create a test graph, as follows:
+ *
+ *  - Create a Router Node
+ *    - Name `Router <index>`
+ *    - Add to Category `Routers,Test,Production,Development`
+ *    - Add 5 interfaces
+ *  - For each Router create 3 servers
+ *     - Name `Server <index>`
+ *     - Add all to Category `Servers`
+ *     - Add one to Category `Test`
+ *     - Add one to Category `Production`
+ *     - Add one to Category `Development`
+ *  - For each Router create 1 printer
+ *     - Name `Printer <index>`
+ *     - Add to category `Printers`
+ *     - Add to category `Test,Production,Development`
+ *
+ *  - At the end, create a graph based on the node definition above. Afterwards all Routers are connected to a dummy vertex.
+ *  - The graph generated consists of `5 * ROUTER_NODE_COUNT + 1` vertices and `5 * ROUTER_NODE_COUNT` edges.
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {DaoConfiguration.class, GraphGeneratorTest.class})
 @Configuration

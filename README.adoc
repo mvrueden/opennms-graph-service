@@ -1,7 +1,8 @@
 = OpenNMS Graph Service Proof of Concept
 
-The goal is to provide some new thing in to OpenNMS which is the single line of access to all Graph related operations.
-The working title of this thing is `Graph Service`.
+The goal of this project is to prototype a new `Graph Service` which is a single line of access/responsibility to all graph related actions.
+Besides that it should address the known issues with the current Topology approach in _OpenNMS_ (as of Horizon 24, Dezember 2018, see https://issues.opennms.org/browse/HZN-1452[HZN-1452].
+From what have been learned, this should then be integrated with _OpenNMS_.
 
 == Terminology
 
@@ -12,17 +13,20 @@ The following figure shows a *Graph* with five *Vertices* and four *Edges*.
 
 image::https://wiki.opennms.org/wiki/images/3/30/Toplogy-graph.png[]
 
-== Dilema
+=== Dilema
 
 As the general concept of a graph with vertices and edges is pretty simple, each use case the graph represents may not be that trivial.
 This leads to a very generic `Graph Model`, but on the other hand a very specific implementation.
-This means the `Graph Model` should be easily shared between modules and applications (e.g. for visualization) but also
-be able to be used for specific use-cases.
+This means the `Graph Model` should be easily shared between modules and applications (e.g. for visualization) but alsobe able to be used for specific use-cases.
 For example the BSM and Enlinkd model would share the same generic model, but under the hood be able to store specific information, thus allowing to write e.g. a very generic UI.
 
-== Rules
+== Model
 
-Based on the dilemma, the following rules apply to provide a very loose model, but be able to provide full flexibility for implemtnations.
+This section describes the overall model of the `Graph API`.
+
+=== Rules
+
+Based on the dilemma (and what we already know), the following rules apply to provide a very loose model, but be able to provide full flexibility for implementations.
 
  - Each Graph must be uniquely identified.
    This identifier is called a `namespace`.
@@ -32,116 +36,102 @@ Based on the dilemma, the following rules apply to provide a very loose model, b
  - Each Graph, Vertex or Edge have additional properties to define their nature in more detail.
    E.g. a Vertex may contain a `label`, `node` or `location` property.
  - Each Edge contains the source and target id of the Vertex it connects, therefore is ALWAYS directed.
+ - Each edge may reference Vertices from a different Graph (`namespace`). However at least one side must share the same `namespace` as the edge itself.
+   This is the "owning" side, thus the edge will be a member of that Graph.
 
-== Notes
+- GenericVertex/Edge/Graph
+ - Concrete Vertex/Edge/Graph -> conversion to Generic
+ - Why? -> easy sharable and persistable, while no need to worry about the conversion too much.
+  --> E.g. putting it into a graph database later on will be easy. Pushing to kafka as well
+  --> Challenge may need better conversion between generic and specific model
 
-=== Events
-* Build a graph via Events (AddVertexEvent, AddEdgeEvent, etc.)
-* Each event should contain the concrete implementation of a vertex or edge, e.g. BsmVertex vs. VmwareVertex, etc.
-* However, they all should be a GenericVertex/Edge in the end
-* If adding, updating and removing is supported, implementing update is tricky for services, e.g. VmwareImporter
-** Basically, when is graph creation finished to decide if nodes should be removed or added.
-   E.g. VmwareImporter runs twice a day and previous nodes must all be removed. Logic of that must live then in the Importer, which will probably lead
-   to a general "RemoveVertexEvent" for all existing vertices, which kinda contradicts the whole purpose
-   Proposal: Lifecycle, with events: GraphCreationStartedEvent/GraphCreationEndEvent to indicate a new "import".
-   However, this leads to the problem, that the importer must know how to create the graph.
-* Also when building the Graph, it should be possible to have access to the currently build one (vertices and eges)
-  With current approach not easily done.
-* The old "StatusProvider" logic could either be implemented using the Enrichment mechanism (see below) or an "Enrichment/Update"-Event in order to update the state of a vertex
-  E.g a graph could listen for "NodeDown"-Events and mark a vertex as down accordingly.
+=== Generic
 
-=== Multiple Graphs (e.g. Navigate To)
+The generic graph model is very similar to GraphML's model and represents the very loose part.
+Basic elements are:
 
-As of now, it is not decided if a GraphProvider can provide multiple graphs, however:
+ * `GenericGraph`,
+ * `GenericVertex` and
+ * `GenericEdge`
 
-Each graph only contains vertices and edges with the same namespace.
-Any edge may point to or from a vertex with a different namespace (This namespace may or may not exist yet in the GraphRepository).
-If one side of the edge is pointing to another namespace, the opposite vertex must be of the same namespace as the graph the edge is "owned" by.
+Each element has a bunch of optional properties, plus the mandatory `namespace` and `id` properties.
 
-=== Searching
+The generic model is used whenever data must be transferred out of the domain.
+For example the user queries the data via a ReST service or the graph should be persisted.
 
-The "GraphProvider" should implement some kind of search mechanism, which provides search suggestions without querying the graph itself.
+=== Domain (or concrete)
 
-=== Enrichment (Thoughts)
+As the generic model only consists of key/value-pairs, this is not very java or developer friendly.
+The generic model only is used for sharing/transferring the graph within the application.
+For a concrete use case a domain model should be used instead.
+However each element (vertex, edge, graph) must be transformable to the generic counter part.
+Therefore the following very basic Domain model is enforced:
 
-An "Enrichment" process should be implemented in order to help resolving a Node, Interface, etc.
-This should be implemented at a higher level, to allow caching of some sort.
-Something like this should be possible
-
-[source, Java]
+[source, java]
 ----
-SimpleVertex v = new SimpleVertex();
-v.withNode(NodeRef.from(node));
+public interface Vertex {
+    String getNamespace();
+    String getId();
+    GenericVertex asGenericVertex();
+}
 
-// ...
+public interface Edge<V extends Vertex> {
+    String getNamespace();
+    String getId();
+    V getSource();
+    V getTarget();
 
-v.withInterface(node.getIpInterfaces().get(0));
-----
+    GenericEdge asGenericEdge();
+}
 
-Afterwards when converting this to a GenericVertex, NodeInfo or IpInterface snippets are put onto the vertex.
-Another more general concept could look like this:
+public interface Graph<V extends Vertex, E extends Edge<V>> extends GraphInfo {
 
-[source, Java]
-----
-interface EnrichmentProvider<V extends Vertex, E extends Edge<V>> {
-   boolean contributesTo(String namespace);
-   void enrich(V vertex);
-   void enrich(E edge);
+    List<V> getVertices();
+    List<E> getEdges();
+
+    String getNamespace();
+
+    void addEdges(Collection<E> edges);
+    void addVertices(Collection<V> vertices);
+
+    // ....
+
+    GenericGraph asGenericGraph();
 }
 ----
 
-A NodeEnrichmentProvider could then enrich vertices or edges with node information if a `nodeRef` attribute is defined,
-resolving either by node id or location:foreignSource:foreignId.
 
-=== UI
+== Persistence
 
-In the original topology implementation, vertices and eges contain ui information, such as tooltip or icons, etc.
-However this should be implemented in the ui layer itself, e.g. a renderer for each namespace/vertex/edge.
-Meaning, each vertex or edge should contain enough information to visualize it accordingly.
+A `GraphRepository` is used in order to persist any given graph.
+Multiple implementations may exist.
+In this work a `DefaultGraphRepository` is implemented,which uses Postgres and Hibernate to persist the graph into a PostgreSQL database.
 
-=== Problems
+The service looks like the following:
 
-- GenericGraph => specific Graph (e.g. SimpleGraph) conversion when persisting is a problem
-- Also when loading data from a repository (e.g. database) the graph info is not yet available, what to do in this case?
+[source,java]
+----
+public interface GraphRepository {
 
-=== Performance
+    <V extends Vertex, E extends Edge<V>, G extends Graph<V, E>> void save(G graph);
 
-All measurements are very rough, on a not optimized system with a not optimized postgresql
+    GenericGraph findByNamespace(String namespace);
+    <G extends Graph<V, E>, V extends Vertex, E extends Edge<V>> G findByNamespace(final String namespace, final Function<GenericGraph, G> transformer);
 
-- Writing a graph with 100k nodes and 100k edges takes roughly about 1 Minute.
-  Where conversion from Graph -> GenericGraph takes half a second and the conversion from the GenericGraph to a GraphEntity roughly the same amount of time
-  Afterwards persisting takes ~30-40 seconds and flushing the session again ~30-60 seconds.
-- Loading the same graph takes about 35 (not enriching the graph with node information)
-  ` Reloaded [nodes-performance] in 33218 ms`.
-  In comparison loading all nodes takes about 50 seconds `Reloaded [nodes] in 48179 ms`.
-  However that only loads the `OnmsNode` object, not including lazy loading relations, such as categories or ip interfaces.
-- Searching for attributes of vertices in the graph  with 100k nodes will return very quickly (no performance impact detected)
-- Searching for categories which match 60% of the graph will return also very quickly (however the noderef vertex association is cached in the graph, otherwise it takes forever)
+}
+----
 
-=== Generate Graph
-The `GenerateGraphTest` will create a graph, as follows:
+Saving the data is pretty straight forward. The domain model of type `Graph` is provided and due to the contract it has a `asGenericGraph` method,
+which allows to convert to a `GenericGraph`.
+From that point on it is simple to convert it to the internal persistence specific model:
+In this case a `Hibernate Entity` model.
 
- * Create a Router Node
-   * Name `Router <index>`
-   * Add to Category `Routers,Test,Production,Development`
-   * Add 5 interfaces
- * For each Router create 3 servers
-    * Name `Server <index>`
-    * Add all to Category `Servers`
-    * Add one to Category `Test`
-    * Add one to Category `Production`
-    * Add one to Category `Development`
- * For each Router create 1 printer
-    * Name `Printer <index>`
-    * Add to category `Printers`
-    * Add to category `Test,Production,Development`
-
-
-At the end, create a graph based on the node definition above.
-Afterwards all Routers are connected to a dummy vertex.
-So the graph generated consists of `5 * ROUTER_NODE_COUNT + 1` vertices and `5 * ROUTER_NODE_COUNT` edges.
+NOTE:    This may look weird at first glance, but assuming multiple persistence strategies, only one conversion to the generic model must be
+         implemented for any given domain model. Otherwise each domain model must know the persistence used, which is not its responsibility.
 
 === SQL to create tables
+
+In order to use this work, the following Postgres tables must be created.
 
 [source, sql]
 ----
@@ -182,3 +172,131 @@ CREATE INDEX idx_fk_graph_elements_relations_graph_id ON graph_elements_relation
 CREATE INDEX idx_fk_graph_elements_relations_element_id ON graph_elements_relations (element_id);
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO opennms;
 ----
+
+== Enrichment
+
+An `EnrichmentService` is available to enrich any vertex.
+Later on this concept can also be used to enrich edges or graph properties.
+In order to "activate" it, a field must be annotated with `@Enrich`.
+The name defines the property name, when converting to a `GenericVertex`, whereas at the moment the `EnrichmentProcessor` defines the implementation doing the actual enrichment.
+However later on, this lookup will happen automatically.
+A generic `EnrichmentProcessor` may be available, but a more concrete (e.g. service-property namespace) will be used if it matches the namespace of the vertex.
+
+See `NodeInfoEnrichmentProcessor` or `NodeSeverityEnrichmentProcessor` for details.
+
+The implementation uses class proxyiing and therefore if enrichment is desired, the `VertexFactory` must be used to create vertices in order to get "on access" enrichment.
+
+== Multiple Graphs (e.g. Navigate To)
+
+In _OpenNMS_ this was achieved by providing a list of Providers vs a list of graphs, which has various problems, such as not treating this concept with concrete objects and
+also missing meta information about the collection of graphs.
+
+To provide multiple graphs, there is no `GraphProvider` but a `GraphContainerProvider`, which basically provides a list of graphs plus some meta data.
+This is very similar to GraphML.
+
+A simple or single `GraphProvider` interface/class may be provided if only one graph is exposed anyways.
+
+Besides that, each graph only contains vertices and edges with the same namespace.
+Any edge may point to or from a vertex with a different namespace (This namespace may or may not exist yet in any existing graph or graph container in the whole system).
+If one side of the edge is pointing to another namespace, the opposite vertex must be of the same namespace as the graph the edge is "owned" by.
+
+== Searching
+
+Conceptually searching consists of the following steps:
+
+ 1. Lookup a set of search suggestions based on a (partial) input string, e.g. `Router` (afterwards called `SearchSuggestion`)
+ 1. Given a provided `SearchSuggestion` return a list of `vertices` which match it
+
+This is necessary in order to allow for a very abstract search, which may not match any attributes in the graph, but are more generic.
+For example a search for a category returns the list of matching categories, but selecting it in the UI returns all vertices matching the selected category.
+
+On the other hand this means, that the `SearchProvider` must know about the `structure` of the vertices/edges of the graph.
+In order to have the `SearchProvider` find all vertices in the graph which match the criteria, it must know on how to "resolve from a category".
+
+One implementation could simply have the `GraphProvider` or `Graph` implement an interface if they support a certain "lookup".
+However the correct place should probably be the `GraphProvider` instead of the graph as additional lookups may require (e.g. load all node ids from the database matching the category), which should not be made from the graph object.
+This strategy has the down side that each `GraphProvider` must implement this, which leads to duplicate code.
+The approach followed here is to bind the provider to the type of the vertices in the graph.
+Therefore the logic lives in the `SearchProvider` and uses the type of the vertex (e.g. NodeAware/CategoryAware) to do the filtering.
+
+NOTE:   As searching usually always requires going through all of the elements of the graph it should not be searched on enriched fields.
+        To optimize search performance, each search can be limited to a small number of results (e.g. 10-25) as more cannot be presented to the user in a useful way anyways.
+
+WARNING:    As this is probably the most performance impacted operation, various test scenarios should be provided to ensure that new introduced `SearchProviders` perform within a certain expected performance window.
+
+== Partial Updates
+
+It should be possible to listen for `Graph events` which then allow to partially update or build a graph.
+For this a `ChangeSet` was implemented which allows to detect these changes by simply providing two graphs, where only one is mandatory.
+From this it is computable what has changed.
+
+Afterwards according events can be send in order to inform interested consumers.
+
+There are various listeners.
+A simple one, called `GraphChangeListener` which has callbacks to each event.
+A more generic one, called `GraphChangeSetListener` which provides the full `ChangeSet` to allow for more detailled implementations.
+
+A `GraphNotificationService` is also available to publish the changes to all consumers.
+
+== UI
+
+The provided ui is implementing only basic concepts, like:
+
+ - selecting a `GraphContainer`
+ - selecting the `namespace` (Graph) from the container
+ - increase/decrease the Semantic Zoom Level
+ - Basic search (for some providers category search and search on the values of the generic vertex representation)
+ - Render the vertices and edges
+
+NOTE:   In the original topology implementation, vertices and edges contain ui information, such as tooltip or icons, etc.
+        However this should be implemented in the ui layer itself, e.g. a renderer for each namespace/vertex/edge.
+        Meaning, each vertex or edge should contain enough information to visualize it accordingly.
+
+== Problems
+
+- GenericGraph => specific Graph (e.g. SimpleGraph) conversion when persisting is a problem
+- Also when loading data from a repository (e.g. database) the graph info is not yet available, what to do in this case?
+
+== Performance Measurements
+
+NOTE:   All measurements are very rough, on a not optimized system with a not optimized postgresql.
+        They used the generated data from `GraphGeneratorTest`.
+
+- Writing a graph with 100k nodes and 100k edges takes roughly about 1 Minute.
+  Where conversion from Graph -> GenericGraph takes half a second and the conversion from the GenericGraph to a GraphEntity roughly the same amount of time
+  Afterwards persisting takes ~30-40 seconds and flushing the session again ~30-60 seconds.
+- Loading the same graph takes about 35 (not enriching the graph with node information)
+  ` Reloaded [nodes-performance] in 33218 ms`.
+  In comparison loading all nodes takes about 50 seconds `Reloaded [nodes] in 48179 ms`.
+  However that only loads the `OnmsNode` object, not including lazy loading relations, such as categories or ip interfaces.
+- Searching for attributes of vertices in the graph  with 100k nodes will return very quickly (no performance impact detected)
+- Searching for categories which match 60% of the graph will return also very quickly (however the noderef vertex association is cached in the graph, otherwise it takes forever)
+
+== Lessons Learned
+
+- Don't use entity objects on a vertex, e.g. OnmsNode, as the object must be either fully initialized, which is never the case, or sessions will be opened and closed all the time
+  A flattened object should be used instead, e.g. NodeInfo vs OnmsNode.
+- Use `@Enrich` for fields if loading them is expensive (e.g. node lookup or status calculation), as the enrichment only happens when returning the data to the user and thus only a small snapshot of the whole graph.
+  Don't forget to create those vertices via the `VertexFactory`
+- Use as few `@Enrich` fields as possible, as enrichment is very expensive
+
+== Open Issues
+
+- The implemented persistence cannot persist the GraphContainer, but only the Graph's within
+- The implemented persistence can not persist updated graphs (at some point it could, but now it is broken)
+- The persistence only persists the namespace of the graph, as the namespace of the elements is implied, but in order to allow for easier lookup, all elements should have the namespace set.
+- A ton of TODOs, should be considered when implementing something like this in _OpenNMS_
+- Persistence cannot deal with `GraphContainer`
+- It is not possible to delete an already persisted graph
+- When persisting an updated version of the graph, calling `accessor.update(entity)` is doing the same calculation as the changeset already performed.
+  Maybe doing the updates manually is more resource friendly
+- The `getSnapshot()` method on the graph is probably not very performant and a better implementation can be found
+- The rest service should also return GraphML if XML is requested
+- Instead of simple, the elements should be named default or something not "simple".
+- Tests should ensure that the performance is always good
+- Various caching strategies should be in place, at the moment it always defaults to "reload after 5 minutes"
+- A `NodeInfo` cache may not be ideal. Maybe we can get around that. At least at the beginning.
+- Additional persistence implementations can follow (e.g. neo4j, or other graph databases)
+- Not sure how the various bits will behave in context of OSGi. there may be some pitfalls not covered here.
+- The GraphInfo or GraphContainerInfo should be revisited as there may be a better way.
+  The main issue is, that dynamic containers are very hard to implement as the namespace and existing graphs already need to be known before actually loading the data.

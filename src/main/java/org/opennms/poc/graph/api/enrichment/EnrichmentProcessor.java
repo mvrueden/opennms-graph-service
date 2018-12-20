@@ -26,21 +26,21 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.poc.graph.impl.enrichment;
+package org.opennms.poc.graph.api.enrichment;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.enrichment.Enrichment;
-import org.springframework.stereotype.Service;
 
-@Service
-public class NodeSeverityEnrichment implements Enrichment<NodeSeverity> {
+// TODO MVR make it namespace aware and probably also return the type?
 
-    @Override
-    public Map<Vertex, NodeSeverity> compute(List<Vertex> vertices) {
-        return vertices.stream().collect(Collectors.toMap(v -> v, v -> NodeSeverity.Major));
-    }
+/**
+ * Interface for concrete enrichment implementations, e.g. NodeInfo enrichment.
+ *
+ * @param <T> The type of the enrichment, e.g. NodeInfo
+ */
+public interface EnrichmentProcessor<T> {
+
+    Map<Vertex, T> enrich(List<Vertex> vertices);
 }

@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.aware.NodeAware;
-import org.opennms.poc.graph.api.enrichment.Enrichment;
+import org.opennms.poc.graph.api.enrichment.EnrichmentProcessor;
 import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.impl.NodeInfoCache;
 import org.opennms.poc.graph.impl.refs.NodeRef;
@@ -47,14 +47,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Scope(SCOPE_PROTOTYPE) // TODO MVR is this correct? We need probably multiple and need to ensure they are thread safe
-public class NodeInfoEnrichment implements Enrichment<NodeInfo> {
+public class NodeInfoEnrichmentProcessor implements EnrichmentProcessor<NodeInfo> {
 
     @Autowired
     private NodeInfoCache cache;
 
     @Override
     @Transactional
-    public Map<Vertex, NodeInfo> compute(List<Vertex> vertices) {
+    public Map<Vertex, NodeInfo> enrich(List<Vertex> vertices) {
         vertices.forEach(vertex -> {
             if (!(vertex instanceof NodeAware)) {
                 throw new IllegalArgumentException("Provided vertices must be of type NodeRefAware in order to resolve the node");

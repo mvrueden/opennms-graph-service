@@ -29,7 +29,7 @@
 package org.opennms.poc.graph.impl.enrichment;
 
 import org.opennms.poc.graph.api.aware.NodeAware;
-import org.opennms.poc.graph.api.enrichment.Enriched;
+import org.opennms.poc.graph.api.enrichment.Enrich;
 import org.opennms.poc.graph.api.info.NodeInfo;
 import org.opennms.poc.graph.api.simple.SimpleVertex;
 import org.opennms.poc.graph.impl.refs.NodeRef;
@@ -41,10 +41,10 @@ public class EnrichedVertexExample extends SimpleVertex implements NodeAware {
 
     private Integer nodeId;
 
-    @Enriched(name = "node", enrichment = NodeInfoEnrichment.class)
+    @Enrich(name = "node", processor = NodeInfoEnrichmentProcessor.class)
     private NodeInfo nodeInfo;
 
-    @Enriched(name = "severity", enrichment = NodeSeverityEnrichment.class)
+    @Enrich(name = "severity", processor = NodeSeverityEnrichmentProcessor.class)
     private NodeSeverity nodeSeverity;
 
     public EnrichedVertexExample(String id, Integer nodeId) {

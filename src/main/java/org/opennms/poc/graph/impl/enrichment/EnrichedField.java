@@ -33,20 +33,20 @@ import java.lang.reflect.Modifier;
 import java.util.Objects;
 
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.enrichment.Enriched;
+import org.opennms.poc.graph.api.enrichment.Enrich;
 
 public class EnrichedField {
 
     private final Field field;
-    private final Enriched enriched;
+    private final Enrich enrich;
 
     public EnrichedField(Field field) {
         this.field = Objects.requireNonNull(field);
-        this.enriched = field.getAnnotation(Enriched.class);
+        this.enrich = field.getAnnotation(Enrich.class);
     }
 
     public boolean isEnrichable() {
-        return enriched != null && !Modifier.isStatic(field.getModifiers());
+        return enrich != null && !Modifier.isStatic(field.getModifiers());
     }
 
     public boolean isNull(Vertex vertex) {
@@ -60,8 +60,8 @@ public class EnrichedField {
         }
     }
 
-    public Enriched getEnrichedAnnotation() {
-        return enriched;
+    public Enrich getEnrichedAnnotation() {
+        return enrich;
     }
 
     public void setValue(Vertex vertex, Object value) {

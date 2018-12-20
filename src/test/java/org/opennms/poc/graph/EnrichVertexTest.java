@@ -35,7 +35,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opennms.poc.graph.impl.enrichment.EnrichedVertexExample;
-import org.opennms.poc.graph.impl.enrichment.EnrichmentProcessor;
+import org.opennms.poc.graph.impl.enrichment.EnrichmentService;
 import org.opennms.poc.graph.impl.enrichment.NodeSeverity;
 import org.opennms.poc.graph.impl.enrichment.VertexFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,12 +45,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 // TODO MVR define test scope little smaller (only enrichment processor + compution is required)
-public class EnrichedVertexTest {
+public class EnrichVertexTest {
 
     private int nodeId = 100002; // TODO MVR create in test instead of expecting it to be there
 
     @Autowired
-    private EnrichmentProcessor processor;
+    private EnrichmentService processor;
 
     @Autowired
     private VertexFactory vertexFactory;

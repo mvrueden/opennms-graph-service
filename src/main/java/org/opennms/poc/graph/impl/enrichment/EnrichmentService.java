@@ -38,8 +38,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.opennms.poc.graph.api.Vertex;
-import org.opennms.poc.graph.api.enrichment.Enriched;
-import org.opennms.poc.graph.api.enrichment.Enrichment;
+import org.opennms.poc.graph.api.enrichment.Enrich;
+import org.opennms.poc.graph.api.enrichment.EnrichmentProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
@@ -48,8 +48,11 @@ import com.google.common.collect.Lists;
 
 // TODO MVR scope protptype, singleton?!
 
+/**
+ * Responsible for enriching Vertices. Maybe later on it can also enrich edges or graph properties.
+ */
 @Service
-public class EnrichmentProcessor {
+public class EnrichmentService {
 
     @Autowired
     private AutowireCapableBeanFactory beanFactory;
@@ -58,9 +61,9 @@ public class EnrichmentProcessor {
         if (field.isEnrichable()) {
             // Only enrich if field's value is null
             final List<Vertex> enrichableVertices = vertices.stream().filter(v -> field.isNull(v)).collect(Collectors.toList());
-            final Enriched enriched = field.getEnrichedAnnotation();
-            final Enrichment enrichment = beanFactory.getBean(enriched.enrichment());
-            final Map<Vertex, Object> valueMap = enrichment.compute(enrichableVertices);
+            final Enrich enrich = field.getEnrichedAnnotation();
+            final EnrichmentProcessor enrichmentProcessor = beanFactory.getBean(enrich.processor());
+            final Map<Vertex, Object> valueMap = enrichmentProcessor.enrich(enrichableVertices);
             enrichableVertices.stream().forEach(v -> {
                 if (valueMap.get(v) != null) {
                     field.setValue(v, valueMap.get(v)); // TODO MVR verify type compatibility

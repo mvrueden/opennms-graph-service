@@ -51,7 +51,7 @@ import javassist.util.proxy.ProxyFactory;
 public class VertexFactory {
 
     @Autowired
-    private EnrichmentProcessor processor;
+    private EnrichmentService processor;
 
     public <T extends Vertex> T createVertex(final Class<T> vertexTypeToCreate, Object... constructorArguments) throws IntrospectionException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         final BeanInfo beanInfo = Introspector.getBeanInfo(vertexTypeToCreate);

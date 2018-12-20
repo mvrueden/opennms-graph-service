@@ -33,14 +33,21 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Any field annotated with {@link Enrich} will be enriched on access,
+ * if instantiated with a {@link org.opennms.poc.graph.impl.enrichment.VertexFactory}.
+ *
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
-public @interface Enriched {
+public @interface Enrich {
 
     // The name of the field, when converting to a GenericVertex/Edge/Graph
     String name();
 
-    // Optionally provide an enrichment implementation. By default all EnrichmentProcessors which can handle the provided namespace and return a
+    // Optionally provide a concrete enrichment processor.
+    // By default all EnrichmentProcessors which can handle the provided namespace and return a
     // type of the field which is enriched is used. If multiple processors match, the first one is used
-    Class<? extends Enrichment> enrichment();
+    // TODO MVR at the moment this is mandatory, but the lookup should be automatic
+    Class<? extends EnrichmentProcessor> processor();
 }

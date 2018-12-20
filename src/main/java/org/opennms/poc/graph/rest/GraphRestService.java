@@ -45,7 +45,7 @@ import org.opennms.poc.graph.api.info.GraphContainerInfo;
 import org.opennms.poc.graph.api.search.GraphSearchService;
 import org.opennms.poc.graph.api.search.SearchSuggestion;
 import org.opennms.poc.graph.impl.enrichment.EnrichedField;
-import org.opennms.poc.graph.impl.enrichment.EnrichmentProcessor;
+import org.opennms.poc.graph.impl.enrichment.EnrichmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -66,7 +66,7 @@ public class GraphRestService {
     private GraphSearchService graphSearchService;
 
     @Autowired
-    private EnrichmentProcessor enrichmentProcessor;
+    private EnrichmentService enrichmentService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<GraphContainerInfo> listNamespaces() {
@@ -118,12 +118,12 @@ public class GraphRestService {
                 edgesArray.add(edgeProperties);
             });
 
-            enrichmentProcessor.enrich(graph.getVertices());
+            enrichmentService.enrich(graph.getVertices());
 
             graph.getVertices().stream().forEach(vertex -> {
                 final GenericVertex genericVertex = vertex.asGenericVertex();
                 // At this point we store the computed values accordingly
-                final List<EnrichedField> fields = enrichmentProcessor.getEnrichableFields(vertex);
+                final List<EnrichedField> fields = enrichmentService.getEnrichableFields(vertex);
                 fields.forEach(ef -> {
                     if (!ef.isNull(vertex)) {
                         genericVertex.setComputedProperty(ef.getEnrichedAnnotation().name(), ef.getValue(vertex));

@@ -31,11 +31,11 @@ package org.opennms.poc.graph.api.simple;
 import org.opennms.poc.graph.api.Vertex;
 import org.opennms.poc.graph.api.aware.LocationAware;
 import org.opennms.poc.graph.api.aware.NodeAware;
-import org.opennms.poc.graph.api.enrichment.Enriched;
+import org.opennms.poc.graph.api.enrichment.Enrich;
 import org.opennms.poc.graph.api.generic.GenericProperties;
 import org.opennms.poc.graph.api.generic.GenericVertex;
 import org.opennms.poc.graph.api.info.NodeInfo;
-import org.opennms.poc.graph.impl.enrichment.NodeInfoEnrichment;
+import org.opennms.poc.graph.impl.enrichment.NodeInfoEnrichmentProcessor;
 import org.opennms.poc.graph.impl.refs.NodeRef;
 import org.opennms.poc.graph.impl.refs.NodeRefs;
 
@@ -49,7 +49,7 @@ public class SimpleVertex implements Vertex, NodeAware, LocationAware {
     // Either nodeId as string or foreignSource:foreignId combination
     private String nodeRefString;
 
-    @Enriched(name="node", enrichment = NodeInfoEnrichment.class)
+    @Enrich(name="node", processor = NodeInfoEnrichmentProcessor.class)
     private NodeInfo nodeInfo;
 
     public SimpleVertex(String namespace, String id) {
