@@ -220,9 +220,25 @@ The name defines the property name, when converting to a `GenericVertex`, wherea
 However later on, this lookup will happen automatically.
 A generic `EnrichmentProcessor` may be available, but a more concrete (e.g. service-property namespace) will be used if it matches the namespace of the vertex.
 
-See `NodeInfoEnrichmentProcessor` or `NodeSeverityEnrichmentProcessor` for details.
+An example of an enriched field looks like this:
 
-The implementation uses class proxyiing and therefore if enrichment is desired, the `VertexFactory` must be used to create vertices in order to get "on access" enrichment.
+[source,java]
+----
+public class MyVertex implements Vertex, NodeAware {
+
+   // ...
+
+    @Enrich(name="node", processor = NodeInfoEnrichmentProcessor.class)
+    private NodeInfo nodeInfo;
+
+    // ...
+
+}
+----
+
+See `NodeInfoEnrichmentProcessor` or `NodeSeverityEnrichmentProcessor` to see how the actual enrichment is implemented.
+
+WARNING:    The implementation uses class proxyiing and therefore if enrichment is desired, the `VertexFactory` must be used to create vertices in order to get "on access" enrichment.
 
 == Multiple Graphs (e.g. Navigate To)
 
