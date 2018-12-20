@@ -252,10 +252,17 @@ NOTE:   In the original topology implementation, vertices and edges contain ui i
         However this should be implemented in the ui layer itself, e.g. a renderer for each namespace/vertex/edge.
         Meaning, each vertex or edge should contain enough information to visualize it accordingly.
 
-== Problems
+== Queriing data
 
-- GenericGraph => specific Graph (e.g. SimpleGraph) conversion when persisting is a problem
-- Also when loading data from a repository (e.g. database) the graph info is not yet available, what to do in this case?
+With large graphs and visualization it is going to be a challenge to provide a quick response to the user.
+A rough estimate is, that starting with 10k visual elements the user experience is drastly decreased (with svg rendering).
+
+The concept of the focus and the semantic zoom level (szl) should still be used.
+The idea is, to be able to quickly query a small subset of a large graph and only enrich that.
+This means, enrichment kicks in at the latest possible time, usually before returning the data to the user.
+A subset of the graph is called a `snapshot`.
+Each graph is capable of returning a `snapshot` of itself, given a number of vertices in focus and the szl to apply.
+This later on is then enriched and returned to the user.
 
 == Performance Measurements
 
@@ -300,3 +307,14 @@ NOTE:   All measurements are very rough, on a not optimized system with a not op
 - Not sure how the various bits will behave in context of OSGi. there may be some pitfalls not covered here.
 - The GraphInfo or GraphContainerInfo should be revisited as there may be a better way.
   The main issue is, that dynamic containers are very hard to implement as the namespace and existing graphs already need to be known before actually loading the data.
+
+== How to move forward
+
+From what we have learned in this POC the next steps are:
+
+ - Migrate the basic concepts described here into API modules in _OpenNMS_.
+   Maybe `features/graph/api`.
+ - Provide implementations for all concepts except implementations for a graph provider
+ - Take one use-case (e.g. Vmware-Import) and implement a `GraphProvider` using the existing API and persistence
+ - Iterate over the existing code and make it better
+ - ...
