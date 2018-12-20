@@ -1,7 +1,7 @@
 = OpenNMS Graph Service Proof of Concept
 
 The goal of this project is to prototype a new `Graph Service` which is a single line of access/responsibility to all graph related actions.
-Besides that it should address the known issues with the current Topology approach in _OpenNMS_ (as of Horizon 24, Dezember 2018, see https://issues.opennms.org/browse/HZN-1452[HZN-1452].
+Besides that it should address the known issues with the current Topology approach in _OpenNMS_ (as of Horizon 24, Dezember 2018, see https://issues.opennms.org/browse/HZN-1452[HZN-1452]).
 From what have been learned, this should then be integrated with _OpenNMS_.
 
 == Terminology
@@ -59,7 +59,7 @@ Each element has a bunch of optional properties, plus the mandatory `namespace` 
 The generic model is used whenever data must be transferred out of the domain.
 For example the user queries the data via a ReST service or the graph should be persisted.
 
-=== Domain (or concrete)
+=== Domain (or concrete/specific)
 
 As the generic model only consists of key/value-pairs, this is not very java or developer friendly.
 The generic model only is used for sharing/transferring the graph within the application.
@@ -125,6 +125,44 @@ Saving the data is pretty straight forward. The domain model of type `Graph` is 
 which allows to convert to a `GenericGraph`.
 From that point on it is simple to convert it to the internal persistence specific model:
 In this case a `Hibernate Entity` model.
+
+Loading a graph from persistence can be either achieved by using the default tmethod, which provides a `GenericGraph` in return, as it is well known on how to transfer the persisted model to the generic model.
+However, in most cases a domain model should be returned.
+In order to do so, a Transformer must be provided to convert the GenericGraph to the domain model's graph.
+
+A graph conversion from `GenericGraph` to a `SimpleGraph` may look like the following:
+
+[source, java]
+----
+ final Function<GenericGraph, SimpleGraph<SimpleVertex, SimpleEdge<SimpleVertex>>> generictoSimpleGraphTransformer = genericGraph -> {
+            final SimpleGraph<SimpleVertex, SimpleEdge<SimpleVertex>> simpleGraph = new SimpleGraph<>(genericGraph.getNamespace(), SimpleVertex.class);
+            simpleGraph.setLabel(genericGraph.getLabel());
+            simpleGraph.setDescription(genericGraph.getDescription());
+
+            genericGraph.getVertices().forEach(genericVertex -> {
+                try {
+                    final SimpleVertex eachSimpleVertex = vertexFactory.createVertex(SimpleVertex.class, simpleGraph.getNamespace(), genericVertex.getId());
+                    eachSimpleVertex.setLabel(genericVertex.getProperty(GenericProperties.LABEL));
+                    eachSimpleVertex.setIconKey(genericVertex.getProperty(GenericProperties.ICON_KEY));
+                    eachSimpleVertex.setTooltip(genericVertex.getProperty(GenericProperties.TOOLTIP));
+                    eachSimpleVertex.setNodeRefString(genericVertex.getProperty(GenericProperties.NODE_REF));
+                    eachSimpleVertex.setNodeInfo((NodeInfo) genericVertex.getComputedProperties().get("node"));
+                    simpleGraph.addVertex(eachSimpleVertex);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
+
+            genericGraph.getEdges().forEach(genericEdge -> {
+                final SimpleVertex sourceVertex = simpleGraph.getVertex(genericEdge.getSource().getId());
+                final SimpleVertex targetVertex = simpleGraph.getVertex(genericEdge.getTarget().getId());
+                final SimpleEdge<SimpleVertex> eachSimpleEdge = new SimpleEdge<>(sourceVertex, targetVertex);
+                simpleGraph.addEdge(eachSimpleEdge);
+            });
+
+            return simpleGraph;
+        };
+----
 
 NOTE:    This may look weird at first glance, but assuming multiple persistence strategies, only one conversion to the generic model must be
          implemented for any given domain model. Otherwise each domain model must know the persistence used, which is not its responsibility.
@@ -307,6 +345,8 @@ NOTE:   All measurements are very rough, on a not optimized system with a not op
 - Not sure how the various bits will behave in context of OSGi. there may be some pitfalls not covered here.
 - The GraphInfo or GraphContainerInfo should be revisited as there may be a better way.
   The main issue is, that dynamic containers are very hard to implement as the namespace and existing graphs already need to be known before actually loading the data.
+- ChangeSet is not detecting graph property changes
+- ChangeSet is not working for a `GraphContainer`
 
 == How to move forward
 
